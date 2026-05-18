@@ -1,36 +1,37 @@
 <?php
-// Simple router for API requests
-// Rewrite rules should direct /api/action to /backend/router.php?route=action
+/**
+ * backend/router.php - موجه API الرئيسي v2.0
+ */
+require_once __DIR__ . '/config.php';
+apiHeaders();
 
 $route = $_GET['route'] ?? '';
 
-switch ($route) {
-    case 'auth':
-        require __DIR__ . '/auth.php';
-        break;
-    case 'ads':
-        require __DIR__ . '/ads.php';
-        break;
-    case 'cities':
-        require __DIR__ . '/cities.php';
-        break;
-    case 'categories':
-        require __DIR__ . '/categories.php';
-        break;
-    case 'admin':
-        require __DIR__ . '/admin.php';
-        break;
-    case 'chat':
-        require __DIR__ . '/chat.php';
-        break;
-    case 'notifications':
-        require __DIR__ . '/notifications.php';
-        break;
-    case 'user':
-        require __DIR__ . '/user.php';
-        break;
-    default:
-        require __DIR__ . '/config.php';
-        apiHeaders();
-        jsonError('مسار API غير موجود', 404);
+// خريطة المسارات
+$routes = [
+    'auth'          => 'auth.php',
+    'ads'           => 'ads.php',
+    'cities'        => 'cities.php',
+    'categories'    => 'categories.php',
+    'admin'         => 'admin.php',
+    'chat'          => 'chat.php',
+    'notifications' => 'notifications.php',
+    'user'          => 'user.php',
+    'reports'       => 'reports.php',
+    'commission'    => 'commission.php',
+    'presence'      => 'presence.php',
+    'otp'           => 'otp.php',
+    'realtime'      => 'realtime.php',  // Server-Sent Events
+    'upload'        => 'upload_api.php',
+    'csrf'          => 'csrf.php',
+];
+
+if (isset($routes[$route])) {
+    $file = __DIR__ . '/' . $routes[$route];
+    if (file_exists($file)) {
+        require $file;
+        exit;
+    }
 }
+
+jsonError('مسار API غير موجود', 404);

@@ -1,89 +1,145 @@
-<?php session_start(); ?>
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دفع العمولة - حراج الفاخر</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .comm-container {
-            max-width: 800px;
-            margin: 3rem auto;
-            padding: 2rem;
-            background: var(--card-bg);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--border-color);
-        }
-        .bank-card {
-            background: rgba(5, 150, 105, 0.05);
-            border: 1px solid rgba(5, 150, 105, 0.2);
-            padding: 1.5rem;
-            border-radius: var(--radius-lg);
-            margin-bottom: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .bank-details {
-            font-weight: 800;
-        }
-        .bank-details span {
-            color: var(--primary);
-            font-size: 1.25rem;
-            display: block;
-            margin-top: 0.25rem;
-        }
-    </style>
-</head>
-<body>
-    <header class="glass-header">
-        <div style="max-w: 1200px; margin: 0 auto; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-            <a href="index.php" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
-                <span style="background: var(--primary); color: white; padding: 4px 8px; border-radius: 8px; font-weight: 900; font-size: 0.8rem;">حراج</span>
-                <span style="font-size: 1.25rem; font-weight: 900;">الفاخر</span>
-            </a>
-            <div style="display: flex; gap: 1rem;">
-                <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🌓</button>
-                <a href="index.php" style="color:var(--text-muted); font-weight:bold; text-decoration:none;">العودة للرئيسية</a>
-            </div>
-        </div>
-    </header>
+<?php
+require_once __DIR__ . '/../config.php';
+if (!isset($_SESSION['user_id'])) { header('Location: auth.php'); exit; }
+define('PAGE_TITLE', 'دفع العمولة - ' . SITE_NAME);
+include __DIR__ . '/includes/header.php';
+?>
+<style>
+.bank-card { background: rgba(13,148,136,0.05); border: 1px solid rgba(13,148,136,0.2); padding: 1.1rem; border-radius: var(--radius-lg); margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+.bank-name { font-weight: 900; font-size: 1.05rem; color: var(--primary); }
+.bank-account { color: var(--secondary); font-size: 1.05rem; font-weight: 800; font-family: monospace; }
+.transfer-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+</style>
 
-    <div class="comm-container animate-fade-in">
-        <h1 style="color: var(--primary); text-align: center; font-weight: 900; margin-bottom: 0.5rem;">عمولة الموقع 1% فقط</h1>
-        <p style="text-align: center; color: var(--text-muted); font-weight: 700; margin-bottom: 2rem;">
-            عمولة الموقع هي أمانة في ذمتك، وهي 1% من قيمة السلعة المباعة.
-        </p>
+<div class="container animate-fade-in" style="max-width:920px;">
+    <h2 style="margin:0 0 0.5rem; color:var(--primary); font-weight:900;">💰 عمولة الموقع 1%</h2>
+    <p style="color:var(--text-muted); margin-bottom:1.5rem;">عمولة الموقع هي 1% من قيمة السلعة المباعة. أرسلها على أحد البنوك أدناه ثم أرفق إثبات التحويل.</p>
 
-        <h3 style="margin-bottom: 1rem;">حساباتنا البنكية المعتمدة في اليمن:</h3>
-        
+    <div class="premium-card" style="margin-bottom:1.5rem;">
+        <h3 style="margin:0 0 1rem; color:var(--primary); font-weight:900;">🏦 الحسابات البنكية</h3>
+
         <div class="bank-card">
-            <div class="bank-details">
-                بنك الكريمي الإسلامي
-                <span>123456789</span>
+            <div>
+                <div class="bank-name">🏦 بنك الكريمي الإسلامي</div>
+                <div class="bank-account">123456789</div>
             </div>
-            <div style="font-size: 2rem;">🏦</div>
-        </div>
-        
-        <div class="bank-card">
-            <div class="bank-details">
-                بنك التضامن الإسلامي
-                <span>000-111-2222</span>
-            </div>
-            <div style="font-size: 2rem;">🏛️</div>
+            <button class="btn-outline btn-sm" onclick="copyToClipboard('123456789')">📋 نسخ</button>
         </div>
 
-        <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(245,158,11,0.1); border-radius: var(--radius-lg); border: 1px solid rgba(245,158,11,0.2);">
-            <h4 style="margin: 0 0 0.5rem 0; color: #b45309;">تأكيد الدفع</h4>
-            <p style="margin: 0; font-size: 0.875rem; color: #d97706; font-weight: bold;">
-                بعد تحويل المبلغ، يرجى التواصل معنا عبر واتساب الإدارة على الرقم (777000000) وإرسال صورة السند مع رقم الإعلان.
-            </p>
+        <div class="bank-card">
+            <div>
+                <div class="bank-name">🏛️ بنك التضامن الإسلامي</div>
+                <div class="bank-account">000-111-2222</div>
+            </div>
+            <button class="btn-outline btn-sm" onclick="copyToClipboard('000-111-2222')">📋 نسخ</button>
+        </div>
+
+        <div class="bank-card">
+            <div>
+                <div class="bank-name">🏪 بنك القاسمي</div>
+                <div class="bank-account">555-666-7777</div>
+            </div>
+            <button class="btn-outline btn-sm" onclick="copyToClipboard('555-666-7777')">📋 نسخ</button>
         </div>
     </div>
 
-    <script src="assets/js/app.js"></script>
-</body>
-</html>
+    <div class="premium-card" style="margin-bottom:1.5rem;">
+        <h3 style="margin:0 0 1rem; color:var(--primary); font-weight:900;">📋 إرسال إثبات تحويل</h3>
+
+        <form onsubmit="submitTransfer(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>المبلغ (ر.ي) *</label>
+                    <input type="number" id="amount" required min="1" placeholder="مثال: 250000">
+                </div>
+                <div class="form-group">
+                    <label>تاريخ التحويل *</label>
+                    <input type="date" id="transfer-date" required max="<?= date('Y-m-d') ?>">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>اسم البنك *</label>
+                <select id="bank-name" required>
+                    <option value="">-- اختر --</option>
+                    <option>بنك الكريمي الإسلامي</option>
+                    <option>بنك التضامن الإسلامي</option>
+                    <option>بنك القاسمي</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>رقم الإعلان المرتبط (اختياري)</label>
+                <input type="number" id="ad-id" placeholder="مثال: 5">
+            </div>
+            <div class="form-group">
+                <label>ملاحظات (اختياري)</label>
+                <textarea id="notes" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>📷 صورة إثبات التحويل *</label>
+                <input type="file" id="proof-file" accept="image/*" required>
+                <small style="color:var(--text-muted); font-size:0.78rem;">صورة سند التحويل من تطبيق البنك (JPG/PNG/PDF حتى 5MB)</small>
+            </div>
+            <button type="submit" class="btn-primary">📤 إرسال الإثبات</button>
+        </form>
+    </div>
+
+    <div class="premium-card">
+        <h3 style="margin:0 0 1rem; color:var(--primary); font-weight:900;">📋 تحويلاتي السابقة</h3>
+        <div id="transfers-list"><div style="text-align:center; padding:2rem; color:var(--text-muted);">جاري التحميل...</div></div>
+    </div>
+
+    <div class="warning-card" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:var(--radius-md); padding:1rem; color:#92400E; margin-top:1.5rem; font-weight:700;">
+        ⚠️ بعد إرسال الإثبات، يرجى التواصل مع الإدارة على واتساب: <strong><?= htmlspecialchars(env('ADMIN_WHATSAPP', '777000000')) ?></strong>
+    </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+async function loadTransfers() {
+    try {
+        const r = await apiRequest('commission&action=my_transfers');
+        const list = document.getElementById('transfers-list');
+        if (!r.data.length) {
+            list.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);">لا توجد تحويلات سابقة</div>';
+            return;
+        }
+        list.innerHTML = r.data.map(t => `
+            <div class="transfer-card">
+                <div>
+                    <strong>${t.amount}</strong> · ${escapeHtml(t.bankName)} · ${escapeHtml(t.transferDate || '')}
+                    ${t.adTitle ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">إعلان: ${escapeHtml(t.adTitle)}</div>` : ''}
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <span class="status-badge status-${t.status}">${t.statusLabel}</span>
+                    ${t.proofImage ? `<a href="${t.proofImage}" target="_blank" class="btn-outline btn-sm">👁️ السند</a>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {}
+}
+
+async function submitTransfer(e) {
+    e.preventDefault();
+    const file = document.getElementById('proof-file').files[0];
+    if (!file) return showToast('أرفق صورة الإثبات', 'warning');
+    if (file.size > 5*1024*1024) return showToast('حجم الصورة كبير', 'warning');
+
+    try {
+        const dataUrl = await resizeImage(file, 1400, 0.85);
+        await apiRequest('commission&action=submit', 'POST', {
+            amount: document.getElementById('amount').value,
+            bank_name: document.getElementById('bank-name').value,
+            transfer_date: document.getElementById('transfer-date').value,
+            ad_id: document.getElementById('ad-id').value || 0,
+            notes: document.getElementById('notes').value,
+            proof_image: dataUrl
+        });
+        showToast('✅ تم الإرسال بنجاح', 'success');
+        document.querySelector('form').reset();
+        loadTransfers();
+    } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', loadTransfers);
+</script>
+</body></html>

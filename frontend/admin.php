@@ -1,350 +1,254 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header('Location: index.php');
-    exit;
+require_once __DIR__ . '/../config.php';
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
+    header('Location: index.php'); exit;
 }
+define('PAGE_TITLE', 'لوحة التحكم - ' . SITE_NAME);
+include __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الإدارة - حراج الفاخر</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .admin-layout {
-            display: flex;
-            min-height: calc(100vh - 80px); /* minus header */
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .sidebar {
-            width: 250px;
-            background: var(--card-bg);
-            border-left: 1px solid var(--border-color);
-            padding: 2rem 1rem;
-        }
-        .sidebar-nav {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .nav-item {
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-lg);
-            color: var(--text-muted);
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .nav-item:hover, .nav-item.active {
-            background: rgba(5, 150, 105, 0.1);
-            color: var(--primary);
-        }
-        .content-area {
-            flex: 1;
-            padding: 2rem;
-            background: var(--bg-color);
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-sm);
-        }
-        .stat-card .value {
-            font-size: 2rem;
-            font-weight: 900;
-            color: var(--primary);
-        }
-        .stat-card .label {
-            color: var(--text-muted);
-            font-weight: 700;
-            font-size: 0.875rem;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--card-bg);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-        .data-table th, .data-table td {
-            padding: 1rem;
-            text-align: right;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .data-table th {
-            background: rgba(0,0,0,0.02);
-            font-weight: 800;
-            color: var(--text-muted);
-        }
-        .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 800;
-        }
-        .badge.banned { background: #fee2e2; color: #ef4444; }
-        .badge.active { background: #d1fae5; color: #10b981; }
-        .action-btn {
-            padding: 0.4rem 0.8rem;
-            border-radius: 0.5rem;
-            border: none;
-            font-weight: 700;
-            font-size: 0.75rem;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .action-btn.danger { background: #fee2e2; color: #ef4444; }
-        .action-btn.success { background: #d1fae5; color: #10b981; }
-    </style>
-</head>
-<body>
+<style>
+.admin-layout { display: grid; grid-template-columns: 240px 1fr; gap: 1.25rem; }
+@media (max-width: 768px) { .admin-layout { grid-template-columns: 1fr; } }
+.admin-sidebar { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 0.5rem; height: fit-content; }
+.admin-sidebar button { display: block; width: 100%; text-align: right; background: none; border: none; padding: 0.7rem 1rem; border-radius: var(--radius-md); color: var(--text-main); font-weight: 700; cursor: pointer; transition: var(--transition); font-family: inherit; font-size: 0.92rem; margin-bottom: 4px; }
+.admin-sidebar button:hover { background: var(--hover-bg); }
+.admin-sidebar button.active { background: var(--primary); color: white; }
 
-    <header class="glass-header">
-        <div style="max-w: 1400px; margin: 0 auto; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-            <a href="index.php" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
-                <span style="background: var(--primary); color: white; padding: 4px 8px; border-radius: 8px; font-weight: 900; font-size: 0.8rem;">لوحة الإدارة</span>
-                <span style="font-size: 1.25rem; font-weight: 900;">حراج الفاخر</span>
-            </a>
-            <div style="display: flex; gap: 1rem;">
-                <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🌓</button>
-                <a href="index.php" style="color:var(--text-muted); font-weight:bold; text-decoration:none;">العودة للموقع</a>
-            </div>
-        </div>
-    </header>
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.stat-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-xs); }
+.stat-card .num { font-size: 2rem; font-weight: 900; color: var(--primary); margin-bottom: 4px; }
+.stat-card .label { font-size: 0.82rem; color: var(--text-muted); font-weight: 700; }
+.stat-card .icon { font-size: 1.5rem; opacity: 0.4; float: left; }
+
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th, .admin-table td { padding: 0.7rem 0.85rem; text-align: right; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; }
+.admin-table th { background: var(--bg-color); font-weight: 800; color: var(--primary); }
+.admin-table tr:hover { background: var(--hover-bg); }
+.admin-table-wrap { overflow-x: auto; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg); }
+</style>
+
+<div class="container animate-fade-in">
+    <h2 style="margin:0 0 1.5rem; color:var(--primary); font-weight:900;">🛡️ لوحة تحكم المدير</h2>
 
     <div class="admin-layout">
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <div class="nav-item active" onclick="switchView('dashboard', this)">📊 لوحة القيادة</div>
-                <div class="nav-item" onclick="switchView('users', this)">👥 إدارة المستخدمين</div>
-                <div class="nav-item" onclick="switchView('reports', this)">🚩 البلاغات</div>
-                <div class="nav-item" onclick="switchView('ads', this)">📦 إدارة الإعلانات</div>
-            </nav>
-        </aside>
+        <nav class="admin-sidebar">
+            <button class="active" onclick="switchView('dashboard', this)">📊 لوحة القيادة</button>
+            <button onclick="switchView('users', this)">👥 المستخدمون</button>
+            <button onclick="switchView('ads', this)">📋 الإعلانات</button>
+            <button onclick="switchView('reports', this)">🚩 البلاغات</button>
+            <button onclick="switchView('commissions', this)">💰 التحويلات</button>
+        </nav>
 
-        <main class="content-area animate-fade-in" id="main-content">
-            <!-- Views dynamically loaded here -->
-        </main>
+        <div id="admin-content">
+            <div style="text-align:center; padding:3rem;">جاري التحميل...</div>
+        </div>
     </div>
+</div>
 
-    <script src="assets/js/app.js"></script>
-    <script>
-        async function loadDashboard() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = 'جاري التحميل...';
-            
-            try {
-                const res = await apiRequest('admin&action=stats');
-                const s = res.data;
-                content.innerHTML = `
-                    <h2 style="margin-top:0;">نظرة عامة</h2>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="value">${s.users}</div>
-                            <div class="label">إجمالي الأعضاء</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="value">${s.ads}</div>
-                            <div class="label">إجمالي الإعلانات</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="value">${s.reports}</div>
-                            <div class="label">بلاغات قيد المراجعة</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="value">${s.commissions} ر.ي</div>
-                            <div class="label">عمولات محصلة</div>
-                        </div>
-                    </div>
-                `;
-            } catch(e) {}
-        }
+<script src="assets/js/app.js"></script>
+<script>
+let currentView = 'dashboard';
 
-                async function loadAds() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = 'جاري التحميل...';
-            
-            try {
-                const res = await apiRequest('admin&action=ads');
-                let html = `
-                    <h2 style="margin-top:0;">إدارة الإعلانات الشاملة</h2>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>رقم الإعلان</th>
-                                <th>العنوان</th>
-                                <th>الناشر</th>
-                                <th>القسم / المدينة</th>
-                                <th>التاريخ</th>
-                                <th>إجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                if (res.data.length === 0) {
-                    html += `<tr><td colspan="6" style="text-align:center;">لا توجد إعلانات</td></tr>`;
-                } else {
-                    res.data.forEach(a => {
-                        html += `
-                            <tr>
-                                <td><a href="ad.php?id=${a.id}" target="_blank">#${a.id}</a></td>
-                                <td><strong>${a.title}</strong></td>
-                                <td>${a.authorName}</td>
-                                <td>${a.category} / ${a.city}</td>
-                                <td style="direction:ltr;">${a.createdAt.substring(0, 10)}</td>
-                                <td><button class="action-btn danger" onclick="deleteAdGlobal(${a.id})">حذف نهائي 🗑️</button></td>
-                            </tr>
-                        `;
-                    });
-                }
-                
-                html += `</tbody></table>`;
-                content.innerHTML = html;
-            } catch(e) {}
-        }
+async function switchView(view, btn) {
+    currentView = view;
+    document.querySelectorAll('.admin-sidebar button').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    document.getElementById('admin-content').innerHTML = '<div style="text-align:center; padding:3rem;">جاري التحميل...</div>';
 
-        async function deleteAdGlobal(adId) {
-            if(!confirm('هل أنت متأكد من حذف هذا الإعلان نهائياً؟ سيتم مسح صوره أيضاً.')) return;
-            try {
-                await apiRequest('admin', 'POST', { action: 'delete_ad', ad_id: adId });
-                loadAds();
-                // Update dashboard stats too if we were to refresh
-            } catch(e) {}
-        }
+    if (view === 'dashboard') return loadDashboard();
+    if (view === 'users') return loadUsers();
+    if (view === 'ads') return loadAdsList();
+    if (view === 'reports') return loadReports();
+    if (view === 'commissions') return loadCommissions();
+}
 
-        async function loadUsers() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = 'جاري التحميل...';
-            
-            try {
-                const res = await apiRequest('admin&action=users');
-                let html = `
-                    <h2 style="margin-top:0;">إدارة المستخدمين</h2>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>م</th>
-                                <th>الاسم</th>
-                                <th>الجوال</th>
-                                <th>الدور</th>
-                                <th>الحالة</th>
-                                <th>إجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                res.data.forEach(u => {
-                    const statusBadge = u.isBanned ? '<span class="badge banned">محظور</span>' : '<span class="badge active">نشط</span>';
-                    const actionBtn = u.isBanned 
-                        ? `<button class="action-btn success" onclick="toggleBan(${u.id}, 'unban')">فك الحظر</button>`
-                        : `<button class="action-btn danger" onclick="toggleBan(${u.id}, 'ban')">حظر</button>`;
-                        
-                    html += `
-                        <tr>
-                            <td>${u.id}</td>
-                            <td><strong>${u.name}</strong></td>
-                            <td>${u.phone}</td>
-                            <td>${u.role}</td>
-                            <td>${statusBadge}</td>
-                            <td>${u.role !== 'admin' ? actionBtn : '-'}</td>
-                        </tr>
-                    `;
-                });
-                
-                html += `</tbody></table>`;
-                content.innerHTML = html;
-            } catch(e) {}
-        }
+async function loadDashboard() {
+    try {
+        const r = await apiRequest('admin&action=stats');
+        const s = r.data;
+        document.getElementById('admin-content').innerHTML = `
+            <div class="stats-grid">
+                <div class="stat-card"><span class="icon">👥</span><div class="num">${s.users}</div><div class="label">المستخدمون</div></div>
+                <div class="stat-card"><span class="icon">📋</span><div class="num">${s.ads}</div><div class="label">إجمالي الإعلانات</div></div>
+                <div class="stat-card"><span class="icon">🟢</span><div class="num">${s.activeAds}</div><div class="label">الإعلانات النشطة</div></div>
+                <div class="stat-card"><span class="icon">✓</span><div class="num">${s.soldAds}</div><div class="label">تم البيع</div></div>
+                <div class="stat-card"><span class="icon">🚩</span><div class="num" style="color:var(--danger);">${s.pendingReports}</div><div class="label">بلاغات قيد المراجعة</div></div>
+                <div class="stat-card"><span class="icon">💰</span><div class="num">${formatNumber(s.commissions)} ر.ي</div><div class="label">إجمالي العمولات</div></div>
+                <div class="stat-card"><span class="icon">⏳</span><div class="num" style="color:var(--warning);">${s.pendingCommissions}</div><div class="label">تحويلات قيد المراجعة</div></div>
+                <div class="stat-card"><span class="icon">💬</span><div class="num">${formatNumber(s.totalMessages)}</div><div class="label">الرسائل المرسلة</div></div>
+                <div class="stat-card"><span class="icon">🆕</span><div class="num" style="color:var(--success);">${s.newUsersToday}</div><div class="label">مستخدمون جدد اليوم</div></div>
+                <div class="stat-card"><span class="icon">📣</span><div class="num" style="color:var(--secondary);">${s.newAdsToday}</div><div class="label">إعلانات جديدة اليوم</div></div>
+            </div>
+        `;
+    } catch(e) {}
+}
 
-        async function loadReports() {
-            const content = document.getElementById('main-content');
-            content.innerHTML = 'جاري التحميل...';
-            
-            try {
-                const res = await apiRequest('admin&action=reports');
-                let html = `
-                    <h2 style="margin-top:0;">إدارة البلاغات</h2>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>رقم الإعلان</th>
-                                <th>المُبلّغ</th>
-                                <th>السبب</th>
-                                <th>الحالة</th>
-                                <th>إجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                if (res.data.length === 0) {
-                    html += `<tr><td colspan="5" style="text-align:center;">لا توجد بلاغات</td></tr>`;
-                } else {
-                    res.data.forEach(r => {
-                        const actionBtn = r.status === 'pending' 
-                            ? `<button class="action-btn success" onclick="resolveReport(${r.id})">تحديد كـ محلول</button>`
-                            : `-`;
-                            
-                        html += `
-                            <tr>
-                                <td><a href="ad.php?id=${r.adId}">#${r.adId}</a></td>
-                                <td>${r.reporterName}</td>
-                                <td>${r.reason}</td>
-                                <td>${r.status === 'pending' ? 'قيد الانتظار' : 'محلول'}</td>
-                                <td>${actionBtn}</td>
-                            </tr>
-                        `;
-                    });
-                }
-                
-                html += `</tbody></table>`;
-                content.innerHTML = html;
-            } catch(e) {}
-        }
+async function loadUsers() {
+    try {
+        const r = await apiRequest('admin&action=users');
+        const u = r.data.users;
+        document.getElementById('admin-content').innerHTML = `
+            <h3 style="margin-top:0;">👥 إدارة المستخدمين (${r.data.total})</h3>
+            <div class="admin-table-wrap"><table class="admin-table">
+                <tr><th>#</th><th>الاسم</th><th>الجوال</th><th>الدور</th><th>الحالة</th><th>التقييم</th><th>الإجراءات</th></tr>
+                ${u.map(x => `
+                    <tr>
+                        <td>${x.id}</td>
+                        <td>${escapeHtml(x.name)} ${x.isPhoneVerified ? '<span class="badge-verified">✓</span>' : ''}</td>
+                        <td style="direction:ltr;">${escapeHtml(x.phone)}</td>
+                        <td><span class="status-badge status-${x.role === 'admin' ? 'pending' : 'active'}">${x.role}</span></td>
+                        <td>${x.isBanned ? '<span class="status-badge status-archived">محظور</span>' : '<span class="status-badge status-active">نشط</span>'}</td>
+                        <td>⭐ ${parseFloat(x.rating).toFixed(1)}</td>
+                        <td>
+                            ${x.isBanned ? `<button class="btn-outline btn-sm" onclick="toggleBan(${x.id}, 0)">رفع الحظر</button>` : `<button class="btn-outline btn-sm" style="border-color:var(--danger); color:var(--danger);" onclick="toggleBan(${x.id}, 1)">حظر</button>`}
+                        </td>
+                    </tr>
+                `).join('')}
+            </table></div>
+        `;
+    } catch(e) {}
+}
 
-        async function toggleBan(userId, type) {
-            if(!confirm('تأكيد الإجراء؟')) return;
-            const action = type === 'ban' ? 'ban_user' : 'unban_user';
-            try {
-                await apiRequest('admin', 'POST', { action, user_id: userId });
-                loadUsers(); // refresh
-            } catch(e) {}
-        }
+async function loadAdsList() {
+    try {
+        const r = await apiRequest('admin&action=ads');
+        const ads = r.data.ads;
+        document.getElementById('admin-content').innerHTML = `
+            <h3 style="margin-top:0;">📋 جميع الإعلانات (${r.data.total})</h3>
+            <div class="admin-table-wrap"><table class="admin-table">
+                <tr><th>#</th><th>العنوان</th><th>الفئة</th><th>المدينة</th><th>السعر</th><th>الناشر</th><th>المشاهدات</th><th>الإجراءات</th></tr>
+                ${ads.map(a => `
+                    <tr>
+                        <td>${a.id}</td>
+                        <td><a href="ad.php?id=${a.id}" target="_blank" style="color:var(--primary);">${escapeHtml(a.title)}</a></td>
+                        <td>${a.category}</td>
+                        <td>${a.city}</td>
+                        <td>${a.price}</td>
+                        <td>${escapeHtml(a.authorName)}</td>
+                        <td>${a.views}</td>
+                        <td>
+                            <button class="btn-outline btn-sm" onclick="adminTogglePin(${a.id})">📌 تثبيت</button>
+                            <button class="btn-outline btn-sm" style="border-color:var(--danger); color:var(--danger);" onclick="adminDeleteAd(${a.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </table></div>
+        `;
+    } catch(e) {}
+}
 
-        async function resolveReport(reportId) {
-            try {
-                await apiRequest('admin', 'POST', { action: 'resolve_report', report_id: reportId });
-                loadReports();
-            } catch(e) {}
-        }
+async function loadReports() {
+    try {
+        const r = await apiRequest('admin&action=reports');
+        const reports = r.data;
+        document.getElementById('admin-content').innerHTML = `
+            <h3 style="margin-top:0;">🚩 البلاغات (${reports.length})</h3>
+            <div class="admin-table-wrap"><table class="admin-table">
+                <tr><th>#</th><th>الإعلان</th><th>المُبلِّغ</th><th>السبب</th><th>التفاصيل</th><th>الحالة</th><th>الإجراءات</th></tr>
+                ${reports.map(r => `
+                    <tr>
+                        <td>${r.id}</td>
+                        <td>${r.adId ? `<a href="ad.php?id=${r.adId}" target="_blank">${escapeHtml(r.adTitle || '#'+r.adId)}</a>` : '—'}</td>
+                        <td>${escapeHtml(r.reporterName || '—')}</td>
+                        <td>${escapeHtml(r.reason)}</td>
+                        <td>${escapeHtml(r.details || '—')}</td>
+                        <td><span class="status-badge status-${r.status === 'pending' ? 'pending' : 'sold'}">${r.status}</span></td>
+                        <td>
+                            ${r.status === 'pending' ? `
+                                <button class="btn-outline btn-sm" onclick="resolveReport(${r.id}, 'resolved')">✓ حل</button>
+                                <button class="btn-outline btn-sm" onclick="resolveReport(${r.id}, 'dismissed')">رفض</button>
+                                ${r.adId ? `<button class="btn-outline btn-sm" style="border-color:var(--danger); color:var(--danger);" onclick="adminDeleteAd(${r.adId})">🗑️ حذف الإعلان</button>` : ''}
+                            ` : '—'}
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="7" style="text-align:center; padding:2rem;">لا توجد بلاغات</td></tr>'}
+            </table></div>
+        `;
+    } catch(e) {}
+}
 
-        function switchView(view, el) {
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
-            
-            if (view === 'dashboard') loadDashboard();
-            if (view === 'users') loadUsers();
-            if (view === 'reports') loadReports();
-            if (view === 'ads') loadAds();
-        }
+async function loadCommissions() {
+    try {
+        const r = await apiRequest('admin&action=commissions');
+        const list = r.data;
+        document.getElementById('admin-content').innerHTML = `
+            <h3 style="margin-top:0;">💰 تحويلات العمولة (${list.length})</h3>
+            <div class="admin-table-wrap"><table class="admin-table">
+                <tr><th>#</th><th>المستخدم</th><th>المبلغ</th><th>البنك</th><th>التاريخ</th><th>السند</th><th>الحالة</th><th>الإجراءات</th></tr>
+                ${list.map(c => `
+                    <tr>
+                        <td>${c.id}</td>
+                        <td>${escapeHtml(c.userName)} <small style="color:var(--text-muted); direction:ltr; display:block;">${escapeHtml(c.userPhone)}</small></td>
+                        <td><strong>${c.amount}</strong></td>
+                        <td>${escapeHtml(c.bankName)}</td>
+                        <td>${escapeHtml(c.transferDate || c.date)}</td>
+                        <td>${c.proofImage ? `<a href="${c.proofImage}" target="_blank" class="btn-outline btn-sm">👁️ سند</a>` : '—'}</td>
+                        <td><span class="status-badge status-${c.status === 'pending' ? 'pending' : (c.status === 'approved' ? 'active' : 'sold')}">${c.status}</span></td>
+                        <td>
+                            ${c.status === 'pending' ? `
+                                <button class="btn-outline btn-sm" onclick="approveCommission(${c.id})">✓ قبول</button>
+                                <button class="btn-outline btn-sm" style="border-color:var(--danger); color:var(--danger);" onclick="rejectCommission(${c.id})">✗ رفض</button>
+                            ` : '—'}
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="8" style="text-align:center; padding:2rem;">لا توجد تحويلات</td></tr>'}
+            </table></div>
+        `;
+    } catch(e) {}
+}
 
-        // Init
-        document.addEventListener('DOMContentLoaded', loadDashboard);
-    </script>
-</body>
-</html>
+async function toggleBan(userId, ban) {
+    const action = ban ? 'ban_user' : 'unban_user';
+    if (ban && !await confirmModal('سيتم حظر هذا المستخدم.', 'حظر')) return;
+    try {
+        await apiRequest('admin&action=' + action, 'POST', { user_id: userId });
+        showToast(ban ? 'تم الحظر' : 'تم رفع الحظر', 'success');
+        loadUsers();
+    } catch(e) {}
+}
+
+async function adminDeleteAd(id) {
+    if (!await confirmModal('سيتم حذف الإعلان نهائياً.', 'حذف')) return;
+    try {
+        await apiRequest('admin&action=delete_ad', 'POST', { ad_id: id });
+        showToast('تم الحذف', 'success');
+        switchView(currentView);
+    } catch(e) {}
+}
+
+async function adminTogglePin(id) {
+    try {
+        await apiRequest('admin&action=toggle_pin', 'POST', { ad_id: id });
+        showToast('تم التبديل', 'success');
+        loadAdsList();
+    } catch(e) {}
+}
+
+async function resolveReport(id, status) {
+    try {
+        await apiRequest('admin&action=resolve_report', 'POST', { report_id: id, status });
+        showToast('تم', 'success');
+        loadReports();
+    } catch(e) {}
+}
+
+async function approveCommission(id) {
+    try {
+        await apiRequest('admin&action=approve_commission', 'POST', { id });
+        showToast('تم القبول', 'success');
+        loadCommissions();
+    } catch(e) {}
+}
+
+async function rejectCommission(id) {
+    if (!await confirmModal('سيتم رفض التحويل', 'رفض')) return;
+    try {
+        await apiRequest('admin&action=reject_commission', 'POST', { id });
+        showToast('تم الرفض', 'success');
+        loadCommissions();
+    } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => loadDashboard());
+</script>
+</body></html>

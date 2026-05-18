@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /backend/
+Disallow: /scripts/
+Disallow: /cache/
+Disallow: /uploads/commission/
+Disallow: /uploads/chat/
+
+Sitemap: /frontend/sitemap.php

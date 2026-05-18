@@ -16,5 +16,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     ];
     jsonSuccess($categories);
 }
-
 jsonError('طلب غير صالح');

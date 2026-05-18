@@ -1,334 +1,427 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header('Location: auth.php');
-    exit;
-}
+require_once __DIR__ . '/../config.php';
+if (!isset($_SESSION['user_id'])) { header('Location: auth.php'); exit; }
+
+define('PAGE_TITLE', 'الرسائل - ' . SITE_NAME);
+define('HIDE_SEARCH', true);
+define('EXTRA_CSS', '<link rel="stylesheet" href="assets/css/chat.css">');
+include __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المراسلات الخاصة - حراج اليمن</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .chat-layout {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            height: calc(100vh - 65px);
-            max-width: 1400px;
-            margin: 0 auto;
-            background-color: var(--card-bg);
-            border-left: 1px solid var(--border-color);
-            border-right: 1px solid var(--border-color);
-        }
-        @media (max-width: 768px) {
-            .chat-layout {
-                grid-template-columns: 1fr;
-            }
-            .threads-sidebar {
-                display: block;
-            }
-            .chat-area.active {
-                display: flex !important;
-                position: fixed;
-                top: 65px;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 200;
-                background-color: var(--card-bg);
-            }
-            .threads-sidebar.hidden-mobile {
-                display: none;
-            }
-        }
-        
-        .threads-sidebar {
-            border-left: 1px solid var(--border-color);
-            overflow-y: auto;
-            background-color: var(--card-bg);
-            display: flex;
-            flex-direction: column;
-        }
 
-        .threads-sidebar-header {
-            padding: 1rem;
-            font-weight: 800;
-            font-size: 0.95rem;
-            color: var(--primary);
-            border-bottom: 1px solid var(--border-color);
-            background-color: var(--bg-color);
-        }
-        
-        .thread-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-        .thread-item:hover, .thread-item.active {
-            background-color: rgba(0, 77, 122, 0.04);
-        }
-        .thread-item.unread {
-            border-right: 4px solid var(--secondary);
-            background-color: rgba(0, 153, 102, 0.05);
-        }
-
-                .chat-area {
-            display: flex;
-            flex-direction: column;
-            background-color: #E5DDD5; /* WhatsApp like bg */
-            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-            height: 100%;
-        }
-        .chat-header {
-            padding: 0.9rem 1.25rem;
-            border-bottom: 1px solid var(--border-color);
-            background-color: var(--card-bg);
-            font-weight: 800;
-            font-size: 0.95rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .messages-list {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .msg-bubble {
-            max-width: 65%;
-            padding: 0.5rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            font-weight: 600;
-            position: relative;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        .msg-bubble.me {
-            background-color: #DCF8C6; /* WhatsApp light green */
-            color: #111;
-            align-self: flex-start;
-            border-top-right-radius: 0;
-        }
-        .msg-bubble.other {
-            background-color: #FFFFFF;
-            color: #111;
-            align-self: flex-end;
-            border-top-left-radius: 0;
-        }
-        .chat-input-area {
-            padding: 1rem;
-            background-color: var(--card-bg);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Consistent Premium Header -->
-    <header class="glass-header">
-        <div class="header-container">
-            <a href="index.php" class="header-logo">
-                <span class="header-logo-badge">الرسائل</span>
-                <span>حراج</span>
-            </a>
-            
-            <div class="header-search" style="visibility:hidden;">
-                <input type="text" placeholder="البحث...">
-            </div>
-            
-            <div class="header-actions">
-                <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; font-size:1.1rem; color:white;">🌓</button>
-                <a href="index.php" style="color:white; font-weight:bold; text-decoration:none; font-size:0.85rem;">الرئيسية</a>
-            </div>
+<div class="chat-app" id="chat-app">
+    <!-- Sidebar -->
+    <aside class="chat-sidebar" id="chat-sidebar">
+        <div class="chat-sidebar-header">
+            <h2>💬 الرسائل</h2>
         </div>
-    </header>
-
-    <!-- Chat Area Layout -->
-    <div class="chat-layout animate-fade-in">
-        
-        <!-- Sidebar Conversation List -->
-        <div class="threads-sidebar" id="threads-sidebar-container">
-            <div class="threads-sidebar-header">📥 علبة الوارد (الرسائل)</div>
-            <div id="threads-list" style="flex:1; overflow-y:auto;">
-                <div style="padding:2rem; text-align:center; color:var(--text-muted); font-weight:bold;">جاري التحميل...</div>
-            </div>
+        <div class="chat-search">
+            <input type="text" id="thread-search" placeholder="ابحث في المحادثات...">
         </div>
-        
-        <!-- Active Chat Window -->
-        <div class="chat-area" id="chat-area" style="display:none;">
-            <div class="chat-header">
-                <div>
-                    <button class="btn-gold" id="btn-back-sidebar" style="padding:0.25rem 0.75rem; font-size:0.75rem; display:none; margin-left:8px;">⬅️ رجوع</button>
-                    <span id="chat-ad-title" style="color:var(--primary); font-weight:900;"></span> - مع <span id="chat-other-name" style="color:var(--secondary);"></span>
-                </div>
-                <a href="#" id="view-ad-link" class="btn-gold" style="font-size:0.75rem; padding:0.3rem 0.8rem;">📦 عرض السلعة</a>
-            </div>
-            
-            <!-- Messages Bubble List -->
-            <div class="messages-list" id="messages-list"></div>
-            
-            <!-- Text message input -->
-            <form class="chat-input-area" onsubmit="sendMessage(event)">
-                <input type="text" id="msg-text" class="input-premium" style="margin:0;" placeholder="اكتب رسالتك الخاصة هنا بوضوح..." required autocomplete="off">
-                <button type="submit" class="btn-gold" style="margin:0; padding:0.6rem 1.5rem;">إرسال ✈️</button>
-            </form>
+        <div class="threads-list" id="threads-list">
+            <div style="text-align:center; padding:2rem; color:var(--text-muted);">جاري التحميل...</div>
         </div>
-        
-        <!-- No Chat Selected Placeholder -->
-        <div id="no-chat-selected" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-muted); font-weight:bold; background-color:var(--bg-color);">
-            <div style="font-size:3rem; margin-bottom:1rem;">✉️</div>
-            <div>يرجى اختيار محادثة من القائمة الجانبية للبدء بالدردشة الخاصة.</div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="chat-main" id="chat-main">
+        <div class="chat-empty" id="chat-empty">
+            <div class="chat-empty-icon">💬</div>
+            <h3>اختر محادثة للبدء</h3>
+            <p style="color: var(--text-muted);">اختر محادثة من القائمة أو ابدأ محادثة جديدة من صفحة إعلان</p>
         </div>
-    </div>
 
-    <!-- Core App JS Utilities -->
-    <script src="assets/js/app.js"></script>
-    <script>
-        let currentThreadId = null;
-        let pollInterval = null;
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const initThreadId = urlParams.get('thread');
-
-        async function loadThreads() {
-            try {
-                const res = await apiRequest('chat&action=threads');
-                const list = document.getElementById('threads-list');
-                
-                if (res.data.length === 0) {
-                    list.innerHTML = '<div style="padding:3rem; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:700;">لا توجد محادثات نشطة بعد.</div>';
-                    return;
-                }
-                
-                list.innerHTML = res.data.map(t => `
-                    <div class="thread-item ${t.isUnread ? 'unread' : ''} ${t.id == currentThreadId ? 'active' : ''}" onclick="selectThread(${t.id}, '${t.adTitle}', '${t.otherName}', ${t.adId})">
-                        <div style="font-weight:900; color:var(--text-main); font-size:0.85rem; margin-bottom:2px;">${t.otherName}</div>
-                        <div style="font-size:0.75rem; color:var(--primary); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📦 سلعة: ${t.adTitle}</div>
-                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600;">${t.lastMessage}</div>
-                        <span style="position:absolute; left:10px; top:10px; font-size:0.65rem; color:var(--text-muted); font-weight:700;">${t.date}</span>
+        <div id="chat-active" style="display:none; flex-direction:column; flex:1;">
+            <header class="chat-header-bar">
+                <button class="chat-header-back" onclick="backToList()">→</button>
+                <div class="chat-header-info">
+                    <div class="chat-header-avatar"><img id="other-avatar" src="" alt=""></div>
+                    <div class="chat-header-text">
+                        <h3 class="chat-header-name" id="other-name"></h3>
+                        <div class="chat-header-status" id="other-status">
+                            <span class="online-dot offline"></span> <span id="status-text">غير متصل</span>
+                        </div>
                     </div>
-                `).join('');
-                
-            } catch(e) {}
+                </div>
+                <button onclick="confirmDeleteThread()" class="header-icon-btn" style="background:var(--bg-color); color:var(--danger); border:1px solid var(--border-color);" title="حذف المحادثة">🗑️</button>
+            </header>
+
+            <a id="chat-ad-info" class="chat-ad-info" href="#">
+                <img id="ad-thumb" class="chat-ad-thumb" src="" alt="">
+                <div class="chat-ad-text">
+                    <div class="chat-ad-title" id="ad-title-chat"></div>
+                    <div class="chat-ad-price" id="ad-price-chat"></div>
+                </div>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">عرض ›</span>
+            </a>
+
+            <div class="messages-area" id="messages-area"></div>
+
+            <div class="attachment-preview" id="attachment-preview">
+                <img id="attachment-img" src="">
+                <span id="attachment-name" style="font-weight: 700; font-size: 0.85rem;"></span>
+                <button class="remove-attachment" onclick="clearAttachment()">×</button>
+            </div>
+
+            <div class="chat-input-area">
+                <label class="chat-input-icon-btn" title="إرفاق صورة">
+                    📷
+                    <input type="file" id="file-input" accept="image/*" onchange="handleAttachment(event)">
+                </label>
+                <input type="text" class="chat-input-text" id="message-input" placeholder="اكتب رسالة..." onkeydown="handleKey(event)" oninput="sendTyping()">
+                <button class="chat-send-btn" id="send-btn" onclick="sendMessage()" title="إرسال">➤</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+let currentThread = null;
+let lastMessageId = 0;
+let eventSource = null;
+let typingTimer = null;
+let pendingAttachment = null;
+let threadsData = [];
+const ME_ID = <?= (int)$_SESSION['user_id'] ?>;
+
+async function loadThreads() {
+    try {
+        const r = await apiRequest('chat&action=threads');
+        threadsData = r.data;
+        renderThreads(threadsData);
+
+        // إذا في URL ?thread=X افتحها
+        const urlParams = new URLSearchParams(window.location.search);
+        const tid = parseInt(urlParams.get('thread'));
+        if (tid) openThread(tid);
+    } catch (e) {}
+}
+
+function renderThreads(list) {
+    const container = document.getElementById('threads-list');
+    if (!list.length) {
+        container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);">لا توجد محادثات بعد.<br><a href="index.php" style="color:var(--primary);">تصفح الإعلانات</a></div>';
+        return;
+    }
+    container.innerHTML = list.map(t => `
+        <a class="thread-item ${currentThread === t.id ? 'active' : ''}" onclick="openThread(${t.id})">
+            <div class="thread-avatar">
+                <img src="${t.otherAvatar}" alt="${escapeHtml(t.otherName)}">
+                <span class="thread-status-dot ${t.otherStatus}"></span>
+            </div>
+            <div class="thread-content">
+                <div class="thread-top-line">
+                    <span class="thread-name">${escapeHtml(t.otherName)}</span>
+                    <span class="thread-time">${escapeHtml(t.date)}</span>
+                </div>
+                <div class="thread-bottom-line">
+                    <span class="thread-preview">${escapeHtml(t.lastMessage)}</span>
+                    ${t.unread > 0 ? `<span class="thread-unread-badge">${t.unread}</span>` : ''}
+                </div>
+            </div>
+        </a>
+    `).join('');
+}
+
+async function openThread(id) {
+    currentThread = id;
+    lastMessageId = 0;
+    document.getElementById('chat-empty').style.display = 'none';
+    document.getElementById('chat-active').style.display = 'flex';
+
+    // Mobile: hide sidebar, show main
+    if (window.innerWidth <= 768) {
+        document.getElementById('chat-sidebar').classList.add('hidden-mobile');
+        document.getElementById('chat-main').classList.add('show-mobile');
+    }
+
+    // Highlight active
+    document.querySelectorAll('.thread-item').forEach(t => t.classList.remove('active'));
+    const activeEl = Array.from(document.querySelectorAll('.thread-item')).find(t => t.getAttribute('onclick')?.includes(`openThread(${id})`));
+    if (activeEl) activeEl.classList.add('active');
+
+    // Update URL
+    const url = new URL(window.location);
+    url.searchParams.set('thread', id);
+    window.history.replaceState({}, '', url);
+
+    try {
+        const r = await apiRequest(`chat&action=messages&thread_id=${id}`);
+        const data = r.data;
+
+        // Other user info
+        document.getElementById('other-avatar').src = data.other.avatar_url;
+        document.getElementById('other-name').textContent = data.other.name;
+        updateStatusUI(data.other.status, data.other.lastSeenAt);
+
+        // Ad info
+        if (data.ad) {
+            document.getElementById('ad-thumb').src = data.ad.image;
+            document.getElementById('ad-title-chat').textContent = data.ad.title;
+            document.getElementById('ad-price-chat').textContent = data.ad.priceFormatted;
+            document.getElementById('chat-ad-info').href = `ad.php?id=${data.ad.id}${data.ad.slug ? '&slug='+encodeURIComponent(data.ad.slug) : ''}`;
         }
 
-        let lastMsgId = 0;
+        // Messages
+        renderMessages(data.messages);
+        if (data.messages.length) lastMessageId = data.messages[data.messages.length - 1].id;
 
-        function selectThread(threadId, adTitle, otherName, adId) {
-            currentThreadId = threadId;
-            lastMsgId = 0; // Reset message tracker for new thread
-            
-            // Adjust mobile display
-            if (window.innerWidth <= 768) {
-                document.getElementById('threads-sidebar-container').classList.add('hidden-mobile');
-                document.getElementById('chat-area').classList.add('active');
-                const backBtn = document.getElementById('btn-back-sidebar');
-                if (backBtn) {
-                    backBtn.style.display = 'inline-flex';
-                    backBtn.onclick = () => {
-                        document.getElementById('threads-sidebar-container').classList.remove('hidden-mobile');
-                        document.getElementById('chat-area').classList.remove('active');
-                        currentThreadId = null;
-                        if (pollInterval) {
-                            clearInterval(pollInterval);
-                            pollInterval = null;
-                        }
-                    };
-                }
-            }
+        // Start SSE
+        startEventSource(id);
 
-            // Sync active states on sidebar items immediately
-            document.querySelectorAll('.thread-item').forEach(i => i.classList.remove('active'));
+        // Update unread badge
+        updateBadgeCounts();
+    } catch (e) {}
+}
 
-            loadChat(threadId, adTitle, otherName, adId, false);
-        }
+function renderMessages(messages) {
+    const area = document.getElementById('messages-area');
+    area.innerHTML = '';
+    messages.forEach(addMessageToUI);
+    scrollToBottom();
+}
 
-        async function loadChat(threadId, adTitle, otherName, adId, isPolling = false) {
-            if (currentThreadId !== threadId) return;
-            
-            document.getElementById('no-chat-selected').style.display = 'none';
-            document.getElementById('chat-area').style.display = 'flex';
-            
-            if (adTitle) document.getElementById('chat-ad-title').innerText = adTitle;
-            if (otherName) document.getElementById('chat-other-name').innerText = otherName;
-            if (adId) document.getElementById('view-ad-link').href = `ad.php?id=${adId}`;
-            
+function addMessageToUI(m) {
+    const area = document.getElementById('messages-area');
+    const group = document.createElement('div');
+    group.className = 'message-group ' + (m.isMe ? 'message-mine' : 'message-theirs');
+    group.style.alignSelf = m.isMe ? 'flex-end' : 'flex-start';
+    group.dataset.id = m.id;
+
+    const msg = document.createElement('div');
+    msg.className = 'message ' + (m.isMe ? 'message-mine' : 'message-theirs');
+
+    let content = '';
+    if (m.attachment) {
+        content = `<img src="${m.attachment}" class="message-image" onclick="openImageView('${m.attachment}')" alt="مرفق">`;
+    }
+    if (m.text && m.text !== '[رسالة محذوفة]') {
+        content += `<div>${escapeHtml(m.text).replace(/\n/g, '<br>')}</div>`;
+    } else if (m.text === '[رسالة محذوفة]') {
+        content = `<div style="font-style:italic; opacity:0.7;">🗑️ ${m.text}</div>`;
+    }
+
+    const readCheck = m.isMe ? `<span class="message-read-check ${m.isRead ? 'read' : ''}">${m.isRead ? '✓✓' : '✓'}</span>` : '';
+
+    msg.innerHTML = content + `
+        <div class="message-meta">
+            <span>${escapeHtml(m.date)}</span>
+            ${readCheck}
+        </div>
+        ${m.isMe ? `<div class="message-actions">
+            <button class="message-action-btn" onclick="deleteMessage(${m.id})" title="حذف">🗑️</button>
+        </div>` : ''}
+    `;
+    group.appendChild(msg);
+    area.appendChild(group);
+}
+
+function scrollToBottom() {
+    const area = document.getElementById('messages-area');
+    area.scrollTop = area.scrollHeight;
+}
+
+function updateStatusUI(status, lastSeen) {
+    const dot = document.querySelector('#other-status .online-dot');
+    const text = document.getElementById('status-text');
+    dot.className = 'online-dot ' + status;
+    if (status === 'online') text.textContent = 'متصل الآن';
+    else if (status === 'away') text.textContent = 'بعيد';
+    else text.textContent = 'غير متصل' + (lastSeen ? ` · آخر ظهور ${lastSeen}` : '');
+}
+
+function startEventSource(threadId) {
+    if (eventSource) eventSource.close();
+    try {
+        eventSource = new EventSource(`../backend/router.php?route=chat&action=sse&thread_id=${threadId}&last_id=${lastMessageId}`);
+
+        eventSource.addEventListener('message', e => {
             try {
-                const res = await apiRequest(`chat&action=messages&thread_id=${threadId}&last_msg_id=${lastMsgId}`);
-                const list = document.getElementById('messages-list');
-                
-                if (!isPolling && lastMsgId === 0) {
-                    list.innerHTML = ''; // Clear container only on initial load
-                }
-                
-                if (res.data.messages && res.data.messages.length > 0) {
-                    res.data.messages.forEach(m => {
-                        const msgDiv = document.createElement('div');
-                        msgDiv.className = `msg-bubble ${m.isMe ? 'me' : 'other'}`;
-                        msgDiv.innerHTML = `
-                            <div>${m.text}</div>
-                            <div style="font-size:0.6rem; opacity:0.75; margin-top:0.25rem; text-align:${m.isMe ? 'left' : 'right'}; font-weight:700;">${m.date}</div>
-                        `;
-                        list.appendChild(msgDiv);
-                        
-                        // Keep track of the highest message ID
-                        if (m.id > lastMsgId) {
-                            lastMsgId = m.id;
-                        }
-                    });
-                    
-                    // Smoothly scroll to the bottom when new messages arrive
-                    list.scrollTo({ top: list.scrollHeight, behavior: isPolling ? 'smooth' : 'auto' });
-                }
-                
-                // Set up polling interval if not active
-                if (!pollInterval) {
-                    pollInterval = setInterval(() => {
-                        if (currentThreadId) {
-                            loadChat(currentThreadId, null, null, null, true);
-                        }
-                    }, 3000); // Poll every 3 seconds for instant feels
-                }
-            } catch(e) {}
-        }
-
-        async function sendMessage(e) {
-            e.preventDefault();
-            const textInput = document.getElementById('msg-text');
-            const text = textInput.value.trim();
-            
-            if (!text || !currentThreadId) return;
-            
-            try {
-                const res = await apiRequest('chat', 'POST', { action: 'send', thread_id: currentThreadId, text: text });
-                textInput.value = '';
-                // Instantly poll for new messages
-                loadChat(currentThreadId, null, null, null, true);
+                const m = JSON.parse(e.data);
+                addMessageToUI(m);
+                lastMessageId = Math.max(lastMessageId, m.id);
+                scrollToBottom();
+                // Refresh threads sidebar
                 loadThreads();
-            } catch(e) {}
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadThreads();
-            if (initThreadId) {
-                // If thread parameter is passed in URL, load it directly
-                selectThread(initThreadId);
-            }
-            setInterval(loadThreads, 10000);
+            } catch (err) {}
         });
-    </script>
+
+        eventSource.addEventListener('typing', e => {
+            try {
+                const d = JSON.parse(e.data);
+                toggleTypingIndicator(d.typing);
+            } catch (err) {}
+        });
+
+        eventSource.addEventListener('presence', e => {
+            try {
+                const d = JSON.parse(e.data);
+                updateStatusUI(d.status);
+            } catch (err) {}
+        });
+
+        eventSource.onerror = () => {
+            // إعادة الاتصال
+            eventSource.close();
+            setTimeout(() => { if (currentThread) startEventSource(currentThread); }, 3000);
+        };
+    } catch (e) {
+        // Fallback to polling
+        startPolling(threadId);
+    }
+}
+
+let pollingInterval = null;
+function startPolling(threadId) {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(async () => {
+        if (currentThread !== threadId) return;
+        try {
+            const r = await apiRequest(`chat&action=messages&thread_id=${threadId}&last_id=${lastMessageId}`, 'GET', null, { silent: true });
+            r.data.messages.forEach(m => {
+                addMessageToUI(m);
+                lastMessageId = Math.max(lastMessageId, m.id);
+            });
+            if (r.data.messages.length) scrollToBottom();
+            if (r.data.other) updateStatusUI(r.data.other.status);
+        } catch (e) {}
+    }, 3000);
+}
+
+function toggleTypingIndicator(typing) {
+    const area = document.getElementById('messages-area');
+    let ti = document.getElementById('typing-indicator');
+    if (typing && !ti) {
+        ti = document.createElement('div');
+        ti.id = 'typing-indicator';
+        ti.className = 'typing-indicator';
+        ti.innerHTML = '<span></span><span></span><span></span>';
+        area.appendChild(ti);
+        scrollToBottom();
+    } else if (!typing && ti) {
+        ti.remove();
+    }
+}
+
+let typingDebounce = null;
+function sendTyping() {
+    if (!currentThread) return;
+    if (typingDebounce) clearTimeout(typingDebounce);
+    typingDebounce = setTimeout(() => {
+        apiRequest('chat&action=typing', 'POST', { thread_id: currentThread }, { silent: true, skipCsrf: true }).catch(() => {});
+    }, 300);
+}
+
+async function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (!text && !pendingAttachment) return;
+    if (!currentThread) {
+        showToast('اختر محادثة أولاً', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('send-btn');
+    btn.disabled = true;
+
+    try {
+        const data = { thread_id: currentThread, text };
+        if (pendingAttachment) {
+            data.attachment = pendingAttachment;
+            data.type = 'image';
+        }
+        await apiRequest('chat&action=send', 'POST', data);
+        input.value = '';
+        clearAttachment();
+    } catch (e) {} finally {
+        btn.disabled = false;
+        input.focus();
+    }
+}
+
+function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+}
+
+async function handleAttachment(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { showToast('فقط الصور مسموحة', 'warning'); return; }
+    if (file.size > 5 * 1024 * 1024) { showToast('حجم الصورة كبير', 'warning'); return; }
+
+    try {
+        const dataUrl = await resizeImage(file, 1400, 0.8);
+        pendingAttachment = dataUrl;
+        document.getElementById('attachment-img').src = dataUrl;
+        document.getElementById('attachment-name').textContent = file.name;
+        document.getElementById('attachment-preview').classList.add('show');
+    } catch (err) {
+        showToast('فشل قراءة الصورة', 'error');
+    }
+    e.target.value = '';
+}
+
+function clearAttachment() {
+    pendingAttachment = null;
+    document.getElementById('attachment-preview').classList.remove('show');
+}
+
+async function deleteMessage(id) {
+    if (!await confirmModal('سيتم حذف الرسالة. هل أنت متأكد؟', 'حذف رسالة')) return;
+    try {
+        await apiRequest('chat&action=delete_message', 'POST', { message_id: id });
+        showToast('تم الحذف', 'success');
+        // إعادة تحميل
+        openThread(currentThread);
+    } catch (e) {}
+}
+
+async function confirmDeleteThread() {
+    if (!currentThread) return;
+    if (!await confirmModal('سيتم حذف المحادثة من قائمتك. (لن تُحذف للطرف الآخر)', 'حذف محادثة')) return;
+    try {
+        await apiRequest('chat&action=delete_thread', 'POST', { thread_id: currentThread });
+        showToast('تم الحذف', 'success');
+        currentThread = null;
+        if (eventSource) eventSource.close();
+        document.getElementById('chat-active').style.display = 'none';
+        document.getElementById('chat-empty').style.display = 'flex';
+        loadThreads();
+    } catch (e) {}
+}
+
+function openImageView(src) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10000; display:flex; align-items:center; justify-content:center; cursor:zoom-out;';
+    overlay.innerHTML = `<img src="${src}" style="max-width:95vw; max-height:95vh; object-fit:contain;"><button style="position:absolute; top:20px; left:20px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(255,255,255,0.3); width:44px; height:44px; border-radius:50%; cursor:pointer; font-size:1.2rem;">×</button>`;
+    overlay.onclick = () => overlay.remove();
+    document.body.appendChild(overlay);
+}
+
+function backToList() {
+    document.getElementById('chat-sidebar').classList.remove('hidden-mobile');
+    document.getElementById('chat-main').classList.remove('show-mobile');
+    if (eventSource) eventSource.close();
+}
+
+// Search threads
+document.getElementById('thread-search').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    const filtered = threadsData.filter(t =>
+        t.otherName.toLowerCase().includes(q) ||
+        t.lastMessage.toLowerCase().includes(q) ||
+        t.adTitle.toLowerCase().includes(q)
+    );
+    renderThreads(filtered);
+});
+
+// Close SSE on unload
+window.addEventListener('beforeunload', () => { if (eventSource) eventSource.close(); });
+
+document.addEventListener('DOMContentLoaded', loadThreads);
+</script>
 </body>
 </html>

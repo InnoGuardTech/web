@@ -1,318 +1,473 @@
-<?php session_start(); ?>
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>حراج اليمن - منصة البيع والشراء الأولى في اليمن</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-    <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-    <div style="background: linear-gradient(90deg, #0F2942, #1E3E5E); color: white; padding: 12px 20px; text-align: center; font-weight: bold; font-size: 0.95rem; z-index: 9999; position: relative; box-shadow: 0 4px 15px rgba(15, 41, 66, 0.4); border-bottom: 2px solid #C5A059;">
-        🛡️ وضع الإدارة مفعل <a href="admin.php" style="color: #FFD700; text-decoration: none; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; margin-right: 15px; font-weight: 900; transition: all 0.3s;">الذهاب للوحة التحكم ⚙️</a>
-    </div>
-    <?php endif; ?>
+<?php
+require_once __DIR__ . '/../config.php';
 
-    <!-- Header / Top Bar styled like Saudi Haraj -->
-    <header class="glass-header">
-        <div class="header-container">
-            <a href="index.php" class="header-logo">
-                <span class="header-logo-badge">حراج</span>
-                <span>اليمن</span>
-            </a>
-            
-            <!-- Real Haraj Style Live Search Bar -->
-            <div class="header-search">
-                <input type="text" id="search-input" placeholder="ابحث عن سيارة، عقار، جهاز، أو أي سلعة..." oninput="debounceSearch()">
-                <button onclick="loadAds()">🔍</button>
+define('PAGE_TITLE', SITE_NAME . ' - ' . SITE_SLOGAN);
+define('PAGE_DESC', 'أكبر منصة للبيع والشراء في اليمن. تصفّح آلاف الإعلانات في السيارات، العقارات، الإلكترونيات، والمزيد.');
+define('SHOW_SIDEBAR_TOGGLE', true);
+define('PAGE_URL', APP_URL . '/frontend/index.php');
+
+include __DIR__ . '/includes/header.php';
+?>
+
+<div class="home-container">
+    <!-- Sidebar -->
+    <aside class="sidebar-card animate-fade-in" id="main-sidebar">
+        <h3 class="sidebar-title">🚗 ماركات السيارات</h3>
+        <div class="brand-grid">
+            <?php
+            $brands = [
+                ['تويوتا','🚙','#e53e3e'],
+                ['هيونداي','🚗','#3182ce'],
+                ['مرسيدس','🏎️','#718096'],
+                ['لكزس','🚙','#dd6b20'],
+                ['نيسان','🚗','#4a5568'],
+                ['فورد','🚙','#2b6cb0'],
+                ['كيا','🚗','#805ad5'],
+                ['شيفروليه','🏎️','#d69e2e'],
+                ['BMW','🚗','#2c5282']
+            ];
+            foreach ($brands as $b) {
+                echo '<a href="#" class="brand-item" data-brand="' . htmlspecialchars($b[0]) . '" onclick="filterByBrand(\'' . htmlspecialchars($b[0], ENT_QUOTES) . '\', event)">';
+                echo '<span class="brand-logo">' . $b[1] . '</span>';
+                echo '<span>' . htmlspecialchars($b[0]) . '</span>';
+                echo '</a>';
+            }
+            ?>
+        </div>
+
+        <h3 class="sidebar-title">📁 جميع الأقسام</h3>
+        <div class="brand-list-all" id="categories-sidebar">
+            <div style="padding:1rem; text-align:center; color:var(--text-muted);">جاري التحميل...</div>
+        </div>
+
+        <h3 class="sidebar-title" style="margin-top: 1rem;">🏙️ المدن</h3>
+        <div id="cities-sidebar" style="display:flex; flex-wrap:wrap; gap:6px;">
+            <div style="padding:0.5rem; color:var(--text-muted); font-size:0.8rem;">جاري التحميل...</div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="animate-fade-in">
+
+        <!-- Category Tabs -->
+        <div class="filter-tabs" id="categories-tabs">
+            <!-- Dynamic -->
+        </div>
+
+        <!-- Advanced Filters -->
+        <div class="advanced-filters">
+            <div class="filter-chip">
+                <span>📍</span>
+                <select id="city-select" onchange="loadAds()" aria-label="المدينة">
+                    <option value="الكل">كل المدن</option>
+                </select>
             </div>
-            
-            <div class="header-actions" id="user-menu-area">
-                <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; font-size:1.1rem; color:white;" title="الوضع الداكن">🌓</button>
-                
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="post.php" class="btn-gold">+ أضف إعلانك</a>
-                    
-                    <a href="favorites.php" style="text-decoration:none; font-size:1.2rem;" title="المفضلة">❤️</a>
-                    
-                    <a href="messages.php" style="text-decoration:none; font-size:1.2rem; position:relative;" title="الرسائل">
-                        💬
-                        <span id="chat-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; font-size:0.6rem; width:15px; height:15px; align-items:center; justify-content:center; font-weight:bold;"></span>
-                    </a>
-                    
-                    <a href="user.php?id=<?php echo $_SESSION['user_id']; ?>" style="text-decoration:none; font-weight:800; font-size:0.85rem;">👤 حسابي</a>
-                    
-                    <button onclick="logout()" style="background:none; border:none; color:white; font-weight:bold; cursor:pointer; font-size:0.85rem; font-family:inherit;">خروج</button>
-                <?php else: ?>
-                    <a href="auth.php" class="btn-gold">دخول / تسجيل</a>
-                <?php endif; ?>
+
+            <div class="filter-chip">
+                <span>↕️</span>
+                <select id="sort-select" onchange="loadAds()" aria-label="الترتيب">
+                    <option value="newest">الأحدث</option>
+                    <option value="popular">الأكثر مشاهدة</option>
+                    <option value="cheapest">الأرخص</option>
+                    <option value="expensive">الأغلى</option>
+                    <option value="oldest">الأقدم</option>
+                </select>
+            </div>
+
+            <div class="filter-chip">
+                <span>💰 من</span>
+                <input type="number" id="min-price" placeholder="0" min="0" oninput="debouncedReload()" aria-label="أدنى سعر">
+            </div>
+
+            <div class="filter-chip">
+                <span>💰 إلى</span>
+                <input type="number" id="max-price" placeholder="∞" min="0" oninput="debouncedReload()" aria-label="أعلى سعر">
+            </div>
+
+            <div class="filter-chip" id="year-filter" style="display:none;">
+                <span>📅 من سنة</span>
+                <input type="number" id="min-year" placeholder="1990" min="1980" max="2030" oninput="debouncedReload()">
+            </div>
+            <div class="filter-chip" id="year-filter-max" style="display:none;">
+                <span>إلى</span>
+                <input type="number" id="max-year" placeholder="2026" min="1980" max="2030" oninput="debouncedReload()">
+            </div>
+
+            <button onclick="resetFilters()" style="background:transparent; border:1px solid var(--border-color); padding:0.4rem 0.8rem; border-radius:var(--radius-full); font-size:0.78rem; cursor:pointer; color:var(--text-muted); font-weight:700;">🔄 إعادة تعيين</button>
+
+            <div style="margin-right:auto; display:flex; gap:6px;">
+                <button onclick="setView('list')" id="view-list-btn" class="view-btn active" title="عرض قائمة">≡</button>
+                <button onclick="setView('grid')" id="view-grid-btn" class="view-btn" title="عرض شبكي">▦</button>
             </div>
         </div>
-    </header>
 
-    <!-- Main Layout Container -->
-    <div class="home-container">
-        
-        <!-- Sidebar Navigation (Car Brands & Main Categories) -->
-        <aside class="sidebar-card animate-fade-in">
-            <h3 class="sidebar-title">🚗 ماركات السيارات</h3>
-            <div class="brand-grid">
-                <a href="#" class="brand-item" data-brand="تويوتا" onclick="filterByBrand('تويوتا', event)">
-                    <!-- Toyota Styled SVG -->
-                    <svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#e53e3e; margin-bottom:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8,8-8 8 3.59 8 8-3.59 8-8 8zm0-13c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></svg>
-                    <span>تويوتا</span>
-                </a>
-                <a href="#" class="brand-item" data-brand="هيونداي" onclick="filterByBrand('هيونداي', event)">
-                    <!-- Hyundai Styled SVG -->
-                    <svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#3182ce; margin-bottom:4px;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 14h-2v-4H9v4H7V7h2v4h6V7h2v10z"/></svg>
-                    <span>هيونداي</span>
-                </a>
-                <a href="#" class="brand-item" data-brand="مرسيدس" onclick="filterByBrand('مرسيدس', event)">
-                    <!-- Mercedes Styled SVG -->
-                    <svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#718096; margin-bottom:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5zm0 11c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg>
-                    <span>مرسيدس</span>
-                </a>
-                <a href="#" class="brand-item" data-brand="لكزس" onclick="filterByBrand('لكزس', event)">
-                    <!-- Lexus Styled SVG -->
-                    <svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#dd6b20; margin-bottom:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                    <span>لكزس</span>
-                </a>
-                <a href="#" class="brand-item" data-brand="نيسان" onclick="filterByBrand('نيسان', event)">
-                    <!-- Nissan Styled SVG -->
-                    <svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#4a5568; margin-bottom:4px;"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 100-16 8 8 0 000 16zm-5-9h10v2H7v-2z"/></svg>
-                    <span>نيسان</span>
-                </a>
-                <a href="#" class="brand-item" data-brand="فورد" onclick="filterByBrand('فورد', event)">
-                    <!-- Ford Styled SVG -->
-                    <svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#2b6cb0; margin-bottom:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                    <span>فورد</span>
-                </a>
-            </div>
+        <div id="active-brand-indicator" style="display:none; margin-bottom:0.75rem;">
+            <span class="status-badge" style="background:var(--accent); color:var(--primary); padding:6px 12px; font-size:0.8rem;">
+                🚗 الماركة: <strong id="active-brand-name"></strong>
+                <button onclick="clearBrandFilter()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:900; margin-right:6px;">×</button>
+            </span>
+        </div>
 
-            <h3 class="sidebar-title">📁 جميع الأقسام</h3>
-            <div class="brand-list-all" id="categories-sidebar">
-                <!-- Categories will load dynamically -->
-            </div>
-        </aside>
-
-        <!-- Main Ads Feed -->
-        <main class="animate-fade-in">
-            
-            <!-- Horizontal Scrollable Category Tabs -->
-            <div class="filter-tabs" id="categories-tabs">
-                <!-- Dynamic categories loaded via JS -->
-            </div>
-
-            <!-- Additional filters bar (Cities + Active brand indicator) -->
-            <div class="premium-card" style="display:flex; justify-content:space-between; align-items:center; padding:0.65rem 1rem; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-                <div style="display:flex; align-items:center; gap:0.5rem;">
-                    <span style="font-weight:700; font-size:0.8rem; color:var(--text-muted);">📍 تصفية حسب المدينة:</span>
-                    <select id="city-select" class="input-premium" style="width: auto; padding: 0.3rem 0.6rem; font-size:0.8rem;" onchange="loadAds()">
-                        <option value="الكل">كل مدن اليمن</option>
-                    </select>
+        <!-- Ads Container -->
+        <div class="ad-list" id="ads-container">
+            <div class="skeleton-row">
+                <div class="skeleton-row-main">
+                    <div class="skeleton-thumb"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-meta"></div>
+                    </div>
                 </div>
-                
-                <div id="brand-filter-indicator" style="font-size:0.8rem; font-weight:700; color:var(--primary); display:none;">
-                    النشط: ماركة <span id="active-brand-name" style="color:var(--secondary);"></span>
-                    <button onclick="clearBrandFilter(event)" style="background:none; border:none; color:red; cursor:pointer; font-weight:bold; margin-right:4px;">[إلغاء]</button>
+                <div class="skeleton-side">
+                    <div class="skeleton-price"></div>
+                    <div class="skeleton-city"></div>
                 </div>
             </div>
+        </div>
 
-            <!-- Ad Rows (Horizontal List Feed) -->
-            <div class="ad-list" id="ads-container">
-                <div style="text-align:center; padding:4rem; color:var(--text-muted); font-weight:bold;">جاري تحميل الإعلانات...</div>
-            </div>
-        </main>
-    </div>
+        <!-- Pagination -->
+        <div id="pagination" style="display:flex; justify-content:center; gap:6px; margin: 2rem 0; flex-wrap:wrap;"></div>
+    </main>
+</div>
 
-    <!-- Core App JS Utilities -->
-    <script src="assets/js/app.js"></script>
-    <script>
-        let currentCat = 'all';
-        let currentBrand = '';
-        let searchTimeout;
+<style>
+.view-btn {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-weight: 900;
+    transition: var(--transition);
+}
+.view-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+.page-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.45rem 0.85rem;
+    border-radius: var(--radius-md);
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    transition: var(--transition);
+}
+.page-btn:hover { border-color: var(--primary); color: var(--primary); }
+.page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
 
-        async function init() {
-            // Load Cities
-            try {
-                const cityRes = await apiRequest('cities');
-                const citySelect = document.getElementById('city-select');
-                cityRes.data.forEach(city => {
-                    const opt = document.createElement('option');
-                    opt.value = city;
-                    opt.textContent = city;
-                    citySelect.appendChild(opt);
-                });
-            } catch (e) {}
+<script src="assets/js/app.js"></script>
+<script>
+    let state = {
+        cat: '<?= htmlspecialchars($_GET['cat'] ?? 'all') ?>',
+        city: '<?= htmlspecialchars($_GET['city'] ?? 'الكل') ?>',
+        brand: '',
+        q: '<?= htmlspecialchars($_GET['q'] ?? '') ?>',
+        sort: 'newest',
+        page: 1,
+        view: localStorage.getItem('adsView') || 'list'
+    };
 
-            // Load Categories for tabs and sidebar
-            try {
-                const catRes = await apiRequest('categories');
-                const catTabs = document.getElementById('categories-tabs');
-                const catSidebar = document.getElementById('categories-sidebar');
-                
-                catTabs.innerHTML = '';
-                catSidebar.innerHTML = '';
+    const debouncedReload = debounce(() => { state.page = 1; loadAds(); }, 500);
 
-                catRes.data.forEach(cat => {
-                    // Create horizontal tab button
-                    const tabBtn = document.createElement('button');
-                    tabBtn.className = `filter-tab-btn ${cat.id === currentCat ? 'active' : ''}`;
-                    tabBtn.innerHTML = `<span>${cat.icon}</span> ${cat.name}`;
-                    tabBtn.onclick = () => {
-                        document.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
-                        tabBtn.classList.add('active');
-                        
-                        // Also sync active state in sidebar
-                        document.querySelectorAll('.brand-list-all-item').forEach(b => b.classList.remove('active'));
-                        const sidebarItem = document.getElementById(`side-cat-${cat.id}`);
-                        if (sidebarItem) sidebarItem.classList.add('active');
+    async function init() {
+        // Cities
+        try {
+            const cityRes = await apiRequest('cities');
+            const sel = document.getElementById('city-select');
+            const sidebar = document.getElementById('cities-sidebar');
+            sidebar.innerHTML = '';
+            cityRes.data.forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city; opt.textContent = city;
+                sel.appendChild(opt);
 
-                        currentCat = cat.id;
-                        // When switching categories, clear brand filter if not 'cars'
-                        if (currentCat !== 'cars') {
-                            clearBrandActiveStyles();
-                            currentBrand = '';
-                            document.getElementById('brand-filter-indicator').style.display = 'none';
-                        }
-                        loadAds();
-                    };
-                    catTabs.appendChild(tabBtn);
+                const chip = document.createElement('a');
+                chip.href = '#';
+                chip.style.cssText = 'background:var(--bg-color); padding:4px 10px; border-radius:var(--radius-full); font-size:0.75rem; font-weight:700; color:var(--text-main); text-decoration:none; border:1px solid var(--border-color);';
+                chip.textContent = city;
+                chip.onclick = (e) => { e.preventDefault(); sel.value = city; state.city = city; state.page = 1; loadAds(); };
+                sidebar.appendChild(chip);
+            });
+            if (state.city !== 'الكل') sel.value = state.city;
+        } catch (e) {}
 
-                    // Create sidebar item
-                    const sideItem = document.createElement('a');
-                    sideItem.href = '#';
-                    sideItem.id = `side-cat-${cat.id}`;
-                    sideItem.className = `brand-list-all-item ${cat.id === currentCat ? 'active' : ''}`;
-                    sideItem.innerHTML = `<span>${cat.icon}</span> <span>${cat.name}</span>`;
-                    sideItem.onclick = (e) => {
-                        e.preventDefault();
-                        tabBtn.click(); // trigger same behavior as tab
-                    };
-                    catSidebar.appendChild(sideItem);
-                });
-            } catch (e) {}
+        // Categories
+        try {
+            const catRes = await apiRequest('categories');
+            const tabs = document.getElementById('categories-tabs');
+            const sidebar = document.getElementById('categories-sidebar');
+            tabs.innerHTML = ''; sidebar.innerHTML = '';
 
-            // Initial load of ads
-            loadAds();
+            catRes.data.forEach(cat => {
+                const tabBtn = document.createElement('button');
+                tabBtn.className = `filter-tab-btn ${cat.id === state.cat ? 'active' : ''}`;
+                tabBtn.innerHTML = `<span>${cat.icon}</span> ${cat.name}`;
+                tabBtn.onclick = () => selectCategory(cat.id);
+                tabs.appendChild(tabBtn);
+
+                const side = document.createElement('a');
+                side.href = '#';
+                side.className = `brand-list-all-item ${cat.id === state.cat ? 'active' : ''}`;
+                side.dataset.cat = cat.id;
+                side.innerHTML = `<span>${cat.icon}</span><span>${cat.name}</span>`;
+                side.onclick = (e) => { e.preventDefault(); selectCategory(cat.id); };
+                sidebar.appendChild(side);
+            });
+        } catch (e) {}
+
+        // initial search query
+        if (state.q) document.getElementById('header-search-input').value = state.q;
+
+        loadAds();
+    }
+
+    function selectCategory(catId) {
+        document.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.brand-list-all-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll(`[data-cat="${catId}"]`).forEach(b => b.classList.add('active'));
+        // tabs by text
+        document.querySelectorAll('.filter-tab-btn').forEach(b => {
+            if (b.textContent.trim().endsWith(getCategoryName(catId))) b.classList.add('active');
+        });
+        state.cat = catId;
+        state.page = 1;
+
+        // Show/hide year filter for cars
+        const yearFilter = document.getElementById('year-filter');
+        const yearMax = document.getElementById('year-filter-max');
+        if (catId === 'cars') {
+            yearFilter.style.display = 'flex';
+            yearMax.style.display = 'flex';
+        } else {
+            yearFilter.style.display = 'none';
+            yearMax.style.display = 'none';
+            state.brand = '';
+            document.getElementById('active-brand-indicator').style.display = 'none';
         }
+        loadAds();
+    }
 
-        async function loadAds() {
-            const container = document.getElementById('ads-container');
-            const city = document.getElementById('city-select').value;
-            const q = document.getElementById('search-input').value;
+    function getCategoryName(id) {
+        const map = {all:'الكل',cars:'حراج السيارات',realestate:'عقارات',electronics:'أجهزة وإلكترونيات',
+                     livestock:'مواشي وحيوانات',furniture:'أثاث ومفروشات',jobs:'وظائف',services:'خدمات',other:'أخرى'};
+        return map[id] || id;
+    }
 
-            // Beautiful Pulsing Skeleton Loading Cards
-            container.innerHTML = `
-                <div class="skeleton-row">
-                    <div class="skeleton-row-main">
-                        <div class="skeleton-thumb"></div>
-                        <div class="skeleton-content">
-                            <div class="skeleton-title" style="width: 280px;"></div>
-                            <div class="skeleton-meta" style="width: 150px;"></div>
-                        </div>
-                    </div>
-                    <div class="skeleton-side">
-                        <div class="skeleton-price"></div>
-                        <div class="skeleton-city"></div>
+    async function loadAds() {
+        const container = document.getElementById('ads-container');
+
+        // Build query
+        const city = document.getElementById('city-select').value;
+        const sort = document.getElementById('sort-select').value;
+        const q = document.getElementById('header-search-input')?.value || state.q;
+        const minPrice = document.getElementById('min-price').value;
+        const maxPrice = document.getElementById('max-price').value;
+        const minYear = document.getElementById('min-year')?.value || '';
+        const maxYear = document.getElementById('max-year')?.value || '';
+
+        state.city = city;
+        state.sort = sort;
+        state.q = q;
+
+        // Skeleton
+        let skel = '';
+        for (let i = 0; i < 4; i++) skel += `
+            <div class="skeleton-row">
+                <div class="skeleton-row-main">
+                    <div class="skeleton-thumb"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title" style="width:70%;"></div>
+                        <div class="skeleton-meta" style="width:50%;"></div>
                     </div>
                 </div>
-            `.repeat(4);
+                <div class="skeleton-side">
+                    <div class="skeleton-price"></div>
+                    <div class="skeleton-city"></div>
+                </div>
+            </div>`;
+        container.innerHTML = skel;
 
-            try {
-                const endpoint = `ads&cat=${currentCat}&city=${city}&brand=${currentBrand}&q=${encodeURIComponent(q)}`;
-                const res = await apiRequest(endpoint);
-                const ads = res.data;
-                
-                container.innerHTML = '';
-                
-                if (ads.length === 0) {
-                    container.innerHTML = '<div style="text-align:center; padding:4rem; color:var(--text-muted); font-weight:bold;">لم يتم العثور على إعلانات تطابق بحثك.</div>';
-                    return;
-                }
+        try {
+            const params = new URLSearchParams({
+                cat: state.cat, city, brand: state.brand, q,
+                sort, page: state.page, per_page: 20
+            });
+            if (minPrice) params.set('min_price', minPrice);
+            if (maxPrice) params.set('max_price', maxPrice);
+            if (minYear) params.set('min_year', minYear);
+            if (maxYear) params.set('max_year', maxYear);
 
-                ads.forEach(ad => {
-                    const row = document.createElement('a');
-                    row.href = `ad.php?id=${ad.id}`;
-                    row.className = 'ad-row animate-fade-in';
-                    
-                    // Pinned Badge
-                    const pinBadge = ad.isPinned == 1 ? '<span class="badge-pinned">📌 إعلان مثبت</span> ' : '';
-                    
-                    row.innerHTML = `
-                        <div class="ad-row-main">
-                            <img class="ad-row-thumb" src="${ad.image}" alt="${ad.title}">
-                            <div class="ad-row-content">
-                                <h3 class="ad-row-title">${pinBadge}${ad.title}</h3>
-                                <div class="ad-row-meta">
-                                    <div class="ad-row-meta-item">👤 <span>${ad.userName}</span></div>
-                                    <div class="ad-row-meta-item">⏱️ <span>${ad.date}</span></div>
+            const res = await apiRequest('ads&' + params.toString());
+            const ads = res.data.ads;
+            const total = res.data.total;
+            const totalPages = res.data.total_pages;
+
+            container.innerHTML = '';
+            container.className = state.view === 'grid' ? 'ads-grid' : 'ad-list';
+
+            if (ads.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:4rem 1rem; color:var(--text-muted);">
+                        <div style="font-size:4rem; opacity:0.3;">🔍</div>
+                        <h3 style="margin:1rem 0 0.5rem; color:var(--text-main);">لا توجد نتائج</h3>
+                        <p>جرّب تغيير معايير البحث أو الفلاتر</p>
+                        <button onclick="resetFilters()" class="btn-outline" style="margin-top:1rem;">إعادة تعيين الفلاتر</button>
+                    </div>`;
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            ads.forEach(ad => {
+                const pinBadge = ad.isPinned ? '<span class="badge-pinned">📌 مثبت</span>' : '';
+                const verifiedBadge = ad.verified ? '<span class="badge-verified">✓ موثق</span>' : '';
+
+                let cardHtml;
+                if (state.view === 'grid') {
+                    cardHtml = `
+                        <a href="ad.php?id=${ad.id}${ad.slug ? '&slug='+encodeURIComponent(ad.slug) : ''}" class="ad-card animate-fade-in">
+                            <img class="ad-card-img" src="${ad.image}" alt="${escapeHtml(ad.title)}" loading="lazy">
+                            <div class="ad-card-body">
+                                <h3 class="ad-card-title">${pinBadge} ${escapeHtml(ad.title)}</h3>
+                                <div class="ad-card-price">${ad.price}</div>
+                                <div class="ad-card-meta">
+                                    <span>📍 ${escapeHtml(ad.city)}</span>
+                                    <span>⏱️ ${escapeHtml(ad.date)}</span>
                                 </div>
                             </div>
-                        </div>
-                        <div class="ad-row-side">
-                            <div class="ad-row-price">${ad.price}</div>
-                            <div class="ad-row-city">📍 ${ad.city}</div>
-                        </div>
-                    `;
-                    container.appendChild(row);
-                });
+                        </a>`;
+                } else {
+                    cardHtml = `
+                        <a href="ad.php?id=${ad.id}${ad.slug ? '&slug='+encodeURIComponent(ad.slug) : ''}" class="ad-row animate-fade-in">
+                            <div class="ad-row-main">
+                                <img class="ad-row-thumb" src="${ad.image}" alt="${escapeHtml(ad.title)}" loading="lazy">
+                                <div class="ad-row-content">
+                                    <h3 class="ad-row-title">${pinBadge} ${escapeHtml(ad.title)}</h3>
+                                    <div class="ad-row-meta">
+                                        <div class="ad-row-meta-item">👤 ${verifiedBadge}<span>${escapeHtml(ad.userName)}</span></div>
+                                        <div class="ad-row-meta-item">⏱️ <span>${escapeHtml(ad.date)}</span></div>
+                                        <div class="ad-row-meta-item">👁️ <span>${ad.views || 0}</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ad-row-side">
+                                <div class="ad-row-price">${ad.price}</div>
+                                <div class="ad-row-city">📍 ${escapeHtml(ad.city)}</div>
+                            </div>
+                        </a>`;
+                }
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
 
-            } catch (e) {
-                container.innerHTML = '<div style="text-align:center; padding:4rem; color:var(--text-muted); font-weight:bold;">حدث خطأ أثناء تحميل الإعلانات.</div>';
-            }
+            renderPagination(totalPages, state.page, total);
+
+        } catch (e) {
+            container.innerHTML = `<div style="text-align:center; padding:3rem; color:var(--danger); font-weight:bold;">حدث خطأ أثناء التحميل: ${escapeHtml(e.message)}</div>`;
+        }
+    }
+
+    function renderPagination(totalPages, current, total) {
+        const pag = document.getElementById('pagination');
+        if (totalPages <= 1) {
+            pag.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem;">إجمالي ${total} إعلان</div>`;
+            return;
         }
 
-        function filterByBrand(brand, e) {
-            e.preventDefault();
-            
-            // Switch category to cars if not already there
-            const carTab = Array.from(document.querySelectorAll('.filter-tab-btn')).find(b => b.textContent.includes('سيارات'));
-            if (carTab) {
-                carTab.click();
-            }
+        let html = `<button class="page-btn" onclick="goToPage(${current - 1})" ${current === 1 ? 'disabled' : ''}>‹ السابق</button>`;
 
-            clearBrandActiveStyles();
-            
-            // Add active class to clicked brand
-            const activeBrand = document.querySelector(`.brand-item[data-brand="${brand}"]`);
-            if (activeBrand) activeBrand.classList.add('active');
-
-            currentBrand = brand;
-            
-            // Show brand filter indicator
-            document.getElementById('active-brand-name').innerText = brand;
-            document.getElementById('brand-filter-indicator').style.display = 'block';
-
-            loadAds();
+        const showPages = [];
+        showPages.push(1);
+        for (let i = current - 1; i <= current + 1; i++) {
+            if (i > 1 && i < totalPages) showPages.push(i);
         }
+        if (totalPages > 1) showPages.push(totalPages);
+        const unique = [...new Set(showPages)].sort((a,b) => a-b);
 
-        function clearBrandFilter(e) {
-            if (e) e.preventDefault();
-            clearBrandActiveStyles();
-            currentBrand = '';
-            document.getElementById('brand-filter-indicator').style.display = 'none';
-            loadAds();
-        }
+        let prev = 0;
+        unique.forEach(p => {
+            if (prev && p - prev > 1) html += `<span style="padding:0 6px; color:var(--text-muted);">...</span>`;
+            html += `<button class="page-btn ${p === current ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+            prev = p;
+        });
 
-        function clearBrandActiveStyles() {
-            document.querySelectorAll('.brand-item').forEach(b => b.classList.remove('active'));
-        }
+        html += `<button class="page-btn" onclick="goToPage(${current + 1})" ${current === totalPages ? 'disabled' : ''}>التالي ›</button>`;
+        html += `<div style="width:100%; text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">صفحة ${current} من ${totalPages} — إجمالي ${total} إعلان</div>`;
+        pag.innerHTML = html;
+    }
 
-        function debounceSearch() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(loadAds, 500);
-        }
+    function goToPage(p) {
+        if (p < 1) return;
+        state.page = p;
+        loadAds();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-        async function logout() {
-            try {
-                await apiRequest('auth', 'POST', { action: 'logout' });
-                window.location.reload();
-            } catch (e) {}
-        }
+    function filterByBrand(brand, e) {
+        if (e) e.preventDefault();
+        document.querySelectorAll('.brand-item').forEach(b => b.classList.remove('active'));
+        const activeBrand = document.querySelector(`.brand-item[data-brand="${brand}"]`);
+        if (activeBrand) activeBrand.classList.add('active');
 
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
+        // Switch to cars
+        selectCategory('cars');
+
+        state.brand = brand;
+        document.getElementById('active-brand-name').textContent = brand;
+        document.getElementById('active-brand-indicator').style.display = 'block';
+
+        state.page = 1;
+        loadAds();
+    }
+
+    function clearBrandFilter() {
+        document.querySelectorAll('.brand-item').forEach(b => b.classList.remove('active'));
+        state.brand = '';
+        document.getElementById('active-brand-indicator').style.display = 'none';
+        state.page = 1;
+        loadAds();
+    }
+
+    function resetFilters() {
+        document.getElementById('city-select').value = 'الكل';
+        document.getElementById('sort-select').value = 'newest';
+        document.getElementById('min-price').value = '';
+        document.getElementById('max-price').value = '';
+        const my = document.getElementById('min-year'); if (my) my.value = '';
+        const myx = document.getElementById('max-year'); if (myx) myx.value = '';
+        document.getElementById('header-search-input').value = '';
+        state = { ...state, city:'الكل', sort:'newest', q:'', brand:'', page:1 };
+        document.getElementById('active-brand-indicator').style.display = 'none';
+        loadAds();
+    }
+
+    function setView(v) {
+        state.view = v;
+        localStorage.setItem('adsView', v);
+        document.getElementById('view-list-btn').classList.toggle('active', v === 'list');
+        document.getElementById('view-grid-btn').classList.toggle('active', v === 'grid');
+        loadAds();
+    }
+
+    // Search input debounced
+    const searchInput = document.getElementById('header-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(() => { state.page = 1; loadAds(); }, 500));
+        searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { state.page = 1; loadAds(); }
+        });
+    }
+
+    // Init view button
+    setView(state.view);
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>

@@ -1,32 +1,45 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
+# ====== Environment & Secrets ======
+.env
+.env.local
+.env.production
+*.key
 *.pem
+config.local.php
 
-# debug
-npm-debug.log*
+# ====== Uploads (User content) ======
+uploads/ads/*
+uploads/avatars/*
+uploads/chat/*
+uploads/commission/*
+!uploads/ads/.gitkeep
+!uploads/avatars/.gitkeep
+!uploads/chat/.gitkeep
+!uploads/commission/.gitkeep
 
-# env files
-.env*.local
+# ====== PHP / Composer ======
+/vendor/
+composer.lock
+*.log
+error_log
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# ====== IDE / Editor ======
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
 
-/src/generated/prisma
+# ====== Cache / Temp ======
+/cache/
+/tmp/
+*.tmp
+
+# ====== Database dumps ======
+*.sql.bak
+*.dump
+
+# ====== OS ======
+.DS_Store
+Thumbs.db
+desktop.ini

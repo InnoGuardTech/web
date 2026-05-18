@@ -1,294 +1,163 @@
-<?php session_start(); ?>
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الملف الشخصي - حراج اليمن</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .profile-header {
-            background: linear-gradient(135deg, #003366 0%, #004D99 100%);
-            color: white;
-            padding: 3.5rem 1.5rem;
-            text-align: center;
-            border-radius: var(--radius-lg);
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-md);
-            position: relative;
-            overflow: hidden;
-        }
-        .profile-header::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 80%);
-            pointer-events: none;
-        }
-        .profile-avatar {
-            width: 108px;
-            height: 108px;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(10px);
-            color: white;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3.2rem;
-            margin-bottom: 1rem;
-            border: 3px solid var(--accent);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: var(--transition);
-        }
-        .profile-avatar:hover {
-            transform: scale(1.05);
-        }
-        .profile-stats {
-            display: flex;
-            justify-content: center;
-            gap: 2.5rem;
-            margin-top: 1.75rem;
-        }
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(5px);
-            padding: 0.6rem 1.5rem;
-            border-radius: var(--radius-md);
-            border: 1px solid rgba(255,255,255,0.12);
-            min-width: 140px;
-        }
-        .stat-val {
-            font-size: 1.6rem;
-            font-weight: 900;
-            color: var(--accent);
-        }
-        .stat-lbl {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 700;
-            margin-top: 2px;
-        }
-        .profile-content {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 1.25rem;
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 1.5rem;
-        }
-        @media (max-width: 992px) {
-            .profile-content { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
-    <header class="glass-header">
-        <div class="header-container">
-            <a href="index.php" class="header-logo">
-                <span class="header-logo-badge">الملف الشخصي</span>
-                <span>حراج اليمن</span>
-            </a>
-            <div class="header-actions">
-                <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; font-size:1.1rem; color:white;">🌓</button>
-                <a href="index.php" style="color:white; font-weight:bold; text-decoration:none; font-size:0.85rem;">الرئيسية</a>
+<?php
+require_once __DIR__ . '/../config.php';
+$userId = (int)($_GET['id'] ?? 0);
+define('PAGE_TITLE', 'الملف الشخصي - ' . SITE_NAME);
+include __DIR__ . '/includes/header.php';
+?>
+<style>
+.profile-header { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; padding: 2rem 1.5rem; border-radius: var(--radius-xl); margin-bottom: 1.5rem; }
+.profile-top { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+.profile-avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--accent); overflow: hidden; flex-shrink: 0; }
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-info { flex: 1; min-width: 200px; }
+.profile-info h1 { margin: 0 0 0.4rem; font-weight: 900; font-size: 1.5rem; }
+.profile-info .sub { opacity: 0.85; font-size: 0.9rem; margin-bottom: 0.5rem; }
+.profile-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.85rem; margin-top: 1.25rem; }
+.stat-box { background: rgba(255,255,255,0.1); border-radius: var(--radius-md); padding: 0.85rem; text-align: center; }
+.stat-box .num { font-size: 1.4rem; font-weight: 900; }
+.stat-box .label { font-size: 0.75rem; opacity: 0.85; }
+.profile-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.25rem; }
+@media (max-width: 768px) { .profile-grid { grid-template-columns: 1fr; } }
+.review-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.9rem; margin-bottom: 0.6rem; }
+.review-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.review-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; }
+.review-avatar img { width: 100%; height: 100%; object-fit: cover; }
+</style>
+
+<div class="container animate-fade-in">
+    <div id="profile-container" class="hidden">
+        <div class="profile-header">
+            <div class="profile-top">
+                <div class="profile-avatar"><img id="p-avatar" src="" alt=""></div>
+                <div class="profile-info">
+                    <h1 id="p-name">...</h1>
+                    <div class="sub">⭐ <span id="p-rating">...</span> (<span id="p-count">0</span> تقييم) · انضم في <span id="p-joined">...</span></div>
+                    <div id="p-bio" style="opacity:0.9; font-size:0.9rem;"></div>
+                </div>
+            </div>
+            <div class="profile-stats">
+                <div class="stat-box"><div class="num" id="s-total">0</div><div class="label">إجمالي الإعلانات</div></div>
+                <div class="stat-box"><div class="num" id="s-active">0</div><div class="label">نشطة</div></div>
+                <div class="stat-box"><div class="num" id="s-sold">0</div><div class="label">تم البيع</div></div>
+                <div class="stat-box"><div class="num" id="s-views">0</div><div class="label">إجمالي المشاهدات</div></div>
             </div>
         </div>
-    </header>
 
-    <div style="max-width: 1400px; margin: 1.5rem auto; padding: 0 1.25rem;">
-        <div id="loading" style="text-align:center; padding: 5rem; color:var(--text-muted); font-weight:bold;">
-            جاري تحميل الملف الشخصي للمستخدم... ⏳
-        </div>
-
-        <div id="profile-container" class="hidden animate-fade-in">
-            <div class="profile-header">
-                <div class="profile-avatar">👤</div>
-                <h1 id="p-name" style="margin:0 0 0.5rem 0; font-weight:900;"></h1>
-                <div style="color:rgba(255,255,255,0.7); font-weight:700; font-size:0.85rem;">عضو موثق منذ <span id="p-date"></span></div>
-                
-                                
-                <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $_GET['id']): ?>
-                <div style="margin-top: 1.5rem;">
-                    <button onclick="startProfileChat()" class="btn-gold" style="font-size:1rem; padding:0.6rem 2rem; border-radius:30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">💬 مراسلة خاصة</button>
-                </div>
+        <div class="profile-grid">
+            <div class="section-block premium-card">
+                <h3 style="margin:0 0 1rem; font-weight:900; color:var(--primary); border-bottom:2px solid var(--accent); padding-bottom:0.5rem;">📋 إعلانات المستخدم</h3>
+                <div id="user-ads" class="ad-list" style="max-height:600px; overflow-y:auto;"></div>
+            </div>
+            <div class="section-block premium-card">
+                <h3 style="margin:0 0 1rem; font-weight:900; color:var(--primary); border-bottom:2px solid var(--accent); padding-bottom:0.5rem;">⭐ التقييمات</h3>
+                <div id="reviews-list" style="max-height:500px; overflow-y:auto;"></div>
+                <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $userId): ?>
+                <button class="btn-outline btn-block" onclick="openReviewForm()" style="margin-top:1rem;">✍️ أضف تقييم</button>
                 <?php endif; ?>
-                
-                <div class="profile-stats">
-                    <div class="stat-item">
-                        <span class="stat-val" id="p-rating"></span>
-                        <span class="stat-lbl">تقييم الأعضاء</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-val" id="p-ads-count">0</span>
-                        <span class="stat-lbl">السلع المنشورة</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="profile-content">
-                <!-- User Ads Section -->
-                <div>
-                    <h3 style="margin-top:0; color:var(--primary); font-weight:900; margin-bottom:1rem; display:flex; align-items:center; gap:6px;">📦 إعلانات المستخدم</h3>
-                    <div id="p-ads" class="ad-list"></div>
-                </div>
-                
-                <!-- Ratings & Reviews Section -->
-                <div>
-                    <h3 style="margin-top:0; color:var(--primary); font-weight:900; margin-bottom:1rem; display:flex; align-items:center; gap:6px;">⭐ التقييمات والآراء</h3>
-                    
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                    <div class="premium-card" style="padding:1.25rem; margin-bottom:1.25rem;" id="review-form-container">
-                        <h4 style="margin:0 0 1rem 0; color:var(--primary); font-size:0.95rem; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">أضف تقييمك للتاجر</h4>
-                        <form onsubmit="addReview(event)">
-                            <div style="margin-bottom:1rem;">
-                                <label style="display:block; font-size:0.78rem; font-weight:800; color:var(--text-muted); margin-bottom:0.4rem;">التقييم العام</label>
-                                <select id="r-rating" class="input-premium" style="font-size:0.8rem;">
-                                    <option value="5">⭐⭐⭐⭐⭐ ممتاز وأنصح بالتعامل معه</option>
-                                    <option value="4">⭐⭐⭐⭐ جيد جداً</option>
-                                    <option value="3">⭐⭐⭐ جيد ومقبول</option>
-                                    <option value="2">⭐⭐ لديه بعض السلبيات</option>
-                                    <option value="1">⭐ سيء ولا أنصح بالتعامل معه</option>
-                                </select>
-                            </div>
-                            <div style="margin-bottom:1rem;">
-                                <label style="display:block; font-size:0.78rem; font-weight:800; color:var(--text-muted); margin-bottom:0.4rem;">اكتب رأيك بأمانة</label>
-                                <textarea id="r-content" class="input-premium" required placeholder="كيف كانت مصداقية السلعة وسرعة التجاوب؟" style="font-size:0.8rem; min-height:80px; resize:vertical;"></textarea>
-                            </div>
-                            <button type="submit" class="btn-primary" style="width:100%; padding:0.55rem; font-size:0.82rem;">نشر التقييم بنجاح</button>
-                        </form>
-                    </div>
-                    <?php endif; ?>
-
-                    <div id="p-reviews" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
-                </div>
             </div>
         </div>
     </div>
+    <div id="loading" style="text-align:center; padding:4rem;">جاري التحميل...</div>
+</div>
 
-    <!-- Core App JS Utilities -->
-    <script src="assets/js/app.js"></script>
-    <script>
-                let userAdsForChat = [];
-        
-        async function startProfileChat() {
-            if (userAdsForChat.length === 0) {
-                alert('عذراً، لا يمكنك بدء محادثة مع هذا المستخدم لأنه لا يمتلك أي سلع معروضة حالياً. المحادثات في حراج تعتمد على الإعلانات.');
-                return;
-            }
-            
-            // Pick the first ad as the context for the chat
-            const firstAdId = userAdsForChat[0].id;
-            
-            try {
-                // Send an empty initial "مرحبا" message to open the thread if it doesn't exist
-                const res = await apiRequest('chat', 'POST', { action: 'send', ad_id: firstAdId, text: 'مرحباً بك، أود التواصل معك بخصوص إعلاناتك.' });
-                
-                // Redirect to messages.php and open this thread
-                window.location.href = `messages.php?thread=${res.data.threadId}`;
-            } catch (e) {
-                if(e.message && e.message.includes('لا يمكنك مراسلة نفسك')) {
-                    alert('لا يمكنك مراسلة نفسك');
-                } else {
-                    alert('حدث خطأ أثناء بدء المحادثة');
-                }
-            }
-        }
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('id');
+<script src="assets/js/app.js"></script>
+<script>
+const USER_ID = <?= $userId ?>;
+const ME = <?= isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0 ?>;
 
-        async function init() {
-            if (!userId) {
-                document.getElementById('loading').innerText = 'رقم المستخدم غير صحيح';
-                return;
-            }
+async function load() {
+    try {
+        const r = await apiRequest('user&action=profile&id=' + USER_ID);
+        const d = r.data;
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('profile-container').classList.remove('hidden');
 
-            // Hide review form if viewing own profile
-            <?php if (isset($_SESSION['user_id'])): ?>
-            if (userId == <?php echo $_SESSION['user_id']; ?>) {
-                const rf = document.getElementById('review-form-container');
-                if(rf) rf.style.display = 'none';
-            }
-            <?php endif; ?>
+        document.getElementById('p-avatar').src = d.user.avatar_url;
+        document.getElementById('p-name').textContent = d.user.name;
+        document.getElementById('p-rating').textContent = parseFloat(d.user.rating).toFixed(1);
+        document.getElementById('p-count').textContent = d.user.ratingCount || 0;
+        document.getElementById('p-joined').textContent = d.user.joinedDate;
+        document.getElementById('p-bio').textContent = d.user.bio || '';
 
-            try {
-                const res = await apiRequest(`user&action=profile&id=${userId}`);
-                const data = res.data;
+        document.getElementById('s-total').textContent = d.stats.total;
+        document.getElementById('s-active').textContent = d.stats.active;
+        document.getElementById('s-sold').textContent = d.stats.sold;
+        document.getElementById('s-views').textContent = formatNumber(d.stats.views);
 
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('profile-container').classList.remove('hidden');
-
-                document.title = `الملف الشخصي لـ ${data.user.name} - حراج اليمن`;
-                document.getElementById('p-name').innerText = data.user.name;
-                document.getElementById('p-date').innerText = data.user.joinedDate;
-                document.getElementById('p-rating').innerText = parseFloat(data.user.rating).toFixed(1) + ' ★';
-                document.getElementById('p-ads-count').innerText = data.ads.length;
-
-                // Render Ads as premium rows
-                userAdsForChat = data.ads;
-                const adsContainer = document.getElementById('p-ads');
-                if (data.ads.length === 0) {
-                    adsContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:3rem; font-weight:bold;">لا توجد إعلانات منشورة لهذا المستخدم بعد.</div>';
-                } else {
-                    adsContainer.innerHTML = data.ads.map(ad => `
-                        <a href="ad.php?id=${ad.id}" class="ad-row animate-fade-in">
-                            <div class="ad-row-main">
-                                <img class="ad-row-thumb" src="${ad.image}" alt="${ad.title}">
-                                <div class="ad-row-content">
-                                    <h3 class="ad-row-title">${ad.title}</h3>
-                                    <div class="ad-row-meta">
-                                        <div class="ad-row-meta-item">⏱️ <span>${ad.date}</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ad-row-side">
-                                <div class="ad-row-price">${ad.price}</div>
-                                <div class="ad-row-city">📍 ${ad.city}</div>
-                            </div>
-                        </a>
-                    `).join('');
-                }
-
-                // Render Reviews
-                const revContainer = document.getElementById('p-reviews');
-                if (data.reviews.length === 0) {
-                    revContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:2rem; font-weight:bold;">لا توجد تقييمات أو تعليقات للتاجر بعد.</div>';
-                } else {
-                    revContainer.innerHTML = data.reviews.map(r => `
-                        <div class="premium-card" style="padding:1rem;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem; font-size:0.75rem;">
-                                <strong style="color:var(--primary); font-weight:800;">${r.author}</strong>
-                                <span style="color:var(--text-muted); font-weight:700;">${r.date}</span>
-                            </div>
-                            <div style="color:#f59e0b; margin-bottom:0.4rem; font-size:0.8rem;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
-                            <div style="font-size:0.82rem; font-weight:700; line-height:1.5;">${r.content}</div>
+        const adsBox = document.getElementById('user-ads');
+        adsBox.innerHTML = d.ads.length ? d.ads.map(a => `
+            <a href="ad.php?id=${a.id}" class="ad-row" style="padding:0.6rem;">
+                <div class="ad-row-main">
+                    <img class="ad-row-thumb" style="width:60px; height:60px;" src="${a.image}" alt="">
+                    <div class="ad-row-content">
+                        <h3 class="ad-row-title" style="font-size:0.88rem;">${escapeHtml(a.title)}</h3>
+                        <div class="ad-row-meta" style="font-size:0.7rem;">
+                            <div class="ad-row-meta-item">📍 ${a.city}</div>
+                            <div class="ad-row-meta-item">⏱️ ${a.date}</div>
+                            ${a.status === 'sold' ? '<span class="status-badge status-sold">تم البيع</span>' : ''}
                         </div>
-                    `).join('');
-                }
+                    </div>
+                </div>
+                <div class="ad-row-side"><div class="ad-row-price" style="font-size:0.9rem;">${a.price}</div></div>
+            </a>`).join('') : '<div style="text-align:center; padding:2rem; color:var(--text-muted);">لا توجد إعلانات</div>';
 
-            } catch (err) {
-                document.getElementById('loading').innerHTML = '<div style="color:red; font-size:1.2rem; font-weight:bold;">❌ المستخدم المطلوب غير موجود أو موقوف من قبل الإدارة.</div>';
-            }
-        }
+        const revBox = document.getElementById('reviews-list');
+        revBox.innerHTML = d.reviews.length ? d.reviews.map(r => `
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="review-avatar"><img src="${r.authorAvatar}" alt=""></div>
+                    <div>
+                        <div style="font-weight:800;">${escapeHtml(r.author)}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">${getStarsHTML(r.rating)} · ${r.date}</div>
+                    </div>
+                </div>
+                <div style="font-size:0.88rem;">${escapeHtml(r.content)}</div>
+            </div>`).join('') : '<div style="text-align:center; padding:2rem; color:var(--text-muted);">لا توجد تقييمات</div>';
+    } catch(e) {
+        document.getElementById('loading').innerHTML = '<h3>المستخدم غير موجود</h3><a href="index.php">العودة</a>';
+    }
+}
 
-        async function addReview(e) {
-            e.preventDefault();
-            const rating = document.getElementById('r-rating').value;
-            const content = document.getElementById('r-content').value;
-            
-            try {
-                await apiRequest('user', 'POST', { action: 'add_review', target_id: userId, rating: rating, content: content });
-                document.getElementById('r-content').value = '';
-                showToast('تمت إضافة تقييمك للمستخدم بنجاح');
-                init();
-            } catch(err) {}
-        }
+function openReviewForm() {
+    openModal(`
+        <div class="modal-header"><h3>⭐ أضف تقييماً</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+        <form class="modal-body" onsubmit="submitReview(event)">
+            <div class="form-group">
+                <label>التقييم</label>
+                <select id="r-rating">
+                    <option value="5">⭐⭐⭐⭐⭐ ممتاز</option>
+                    <option value="4">⭐⭐⭐⭐ جيد جداً</option>
+                    <option value="3">⭐⭐⭐ جيد</option>
+                    <option value="2">⭐⭐ سيء</option>
+                    <option value="1">⭐ سيء جداً</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>التعليق</label>
+                <textarea id="r-content" rows="3" placeholder="شارك تجربتك مع هذا البائع..." required minlength="5"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" onclick="closeModal()">إلغاء</button>
+                <button type="submit" class="btn-primary">إرسال</button>
+            </div>
+        </form>
+    `);
+}
 
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
-</body>
-</html>
+async function submitReview(e) {
+    e.preventDefault();
+    try {
+        await apiRequest('user&action=add_review', 'POST', {
+            target_id: USER_ID,
+            rating: document.getElementById('r-rating').value,
+            content: document.getElementById('r-content').value
+        });
+        showToast('✓ تم إرسال التقييم', 'success');
+        closeModal();
+        load();
+    } catch (e) {}
+}
+
+document.addEventListener('DOMContentLoaded', load);
+</script>
+</body></html>
