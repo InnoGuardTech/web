@@ -62,26 +62,51 @@ document.addEventListener('click', (e) => {
 /* ===== Logout ===== */
 async function logout() {
     try {
-        await fetch(API_BASE + '?action=logout', { method: 'POST', credentials: 'include' });
+        await api('auth&action=logout', { method: 'POST' });
     } catch (e) {}
     location.href = 'index.php';
 }
 window.logout = logout;
 
 /* ===== API helper ===== */
-async function api(action, options = {}) {
-    const url = API_BASE + '?action=' + encodeURIComponent(action);
-    const opt = Object.assign({ credentials: 'include', headers: { 'Accept': 'application/json' } }, options);
-    if (opt.body && typeof opt.body === 'object' && !(opt.body instanceof FormData)) {
-        opt.headers['Content-Type'] = 'application/json';
-        opt.body = JSON.stringify(opt.body);
+async function api(routeAction, options = {}) {
+    // routeAction can be "auth&action=login" or just "auth"
+    const url = API_BASE + (routeAction.includes('?') ? '&' : '?') + 'route=' + routeAction;
+    
+    const method = (options.method || 'GET').toUpperCase();
+    const opt = {
+        method: method,
+        credentials: 'include',
+        headers: Object.assign({ 'Accept': 'application/json' }, options.headers || {})
+    };
+
+    if (method !== 'GET') {
+        const data = options.data || options.body;
+        if (data) {
+            if (data instanceof FormData) {
+                opt.body = data;
+            } else {
+                opt.headers['Content-Type'] = 'application/json';
+                opt.body = JSON.stringify(data);
+            }
+        }
     }
+
     try {
         const r = await fetch(url, opt);
+        if (r.status === 419) { // CSRF Error
+            const j = await r.json().catch(() => ({}));
+            if (j.code === 'CSRF_INVALID') {
+                // Refresh page or handle CSRF
+                toast('انتهت الجلسة، يرجى تحديث الصفحة', 'error');
+            }
+            return j;
+        }
         const j = await r.json().catch(() => ({}));
         return j;
     } catch (e) {
-        return { success: false, message: 'خطأ في الاتصال' };
+        console.error('[API Error]', e);
+        return { success: false, message: 'خطأ في الاتصال بالخادم' };
     }
 }
 window.api = api;
@@ -188,6 +213,51 @@ function initLazyImages() {
     }, { rootMargin: '100px' });
     imgs.forEach(i => obs.observe(i));
 }
+
+/* ===== Helpers ===== */
+function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+window.escapeHtml = escapeHtml;
+
+function skeletonGrid(count = 6) {
+    return Array(count).fill(`
+        <div class="ad-card">
+            <div class="skeleton" style="aspect-ratio:4/3;"></div>
+            <div class="ad-body">
+                <div class="skeleton" style="height:18px;width:80%;"></div>
+                <div class="skeleton" style="height:22px;width:50%;margin-top:8px;"></div>
+                <div class="skeleton" style="height:14px;width:70%;margin-top:8px;"></div>
+            </div>
+        </div>
+    `).join('');
+}
+window.skeletonGrid = skeletonGrid;
+
+function renderAdCard(ad) {
+    const price = ad.price_formatted || (ad.price ? new Intl.NumberFormat('ar-YE').format(ad.price) + ' ر.ي' : 'قابل للتفاوض');
+    const img = ad.image || ad.thumbnail || (Array.isArray(ad.images) ? ad.images[0] : null) || '';
+    const cat = ad.category || 'other';
+    const catLabels = {cars:'سيارات',realestate:'عقارات',electronics:'إلكترونيات',furniture:'أثاث',jobs:'وظائف',services:'خدمات',livestock:'حيوانات',other:'أخرى'};
+    return `
+        <a href="ad.php?id=${ad.id}" class="ad-card animate-fadeInUp">
+            <div class="ad-img">
+                ${img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(ad.title)}" loading="lazy">` : `<div class="ad-img-fallback">📦</div>`}
+                <span class="ad-badge">${catLabels[cat] || 'إعلان'}</span>
+                ${ad.isFeatured == 1 ? '<span class="ad-badge featured" style="top:auto;bottom:10px;">⭐ مميز</span>' : ''}
+            </div>
+            <div class="ad-body">
+                <div class="ad-title">${escapeHtml(ad.title)}</div>
+                <div class="ad-price">${price}</div>
+                <div class="ad-meta">
+                    <span>📍 ${escapeHtml(ad.city || '—')}</span>
+                    <span>👁 ${ad.views || 0}</span>
+                </div>
+            </div>
+        </a>
+    `;
+}
+window.renderAdCard = renderAdCard;
 
 /* ===== Init ===== */
 document.addEventListener('DOMContentLoaded', () => {

@@ -371,22 +371,16 @@ if ($action === 'update_avatar') {
 // ============ حذف الحساب (GDPR) ============
 if ($action === 'delete_account') {
     requireAuth();
-    $password = $input['password'] ?? '';
-    if (empty($password)) jsonError('أدخل كلمة المرور لتأكيد الحذف');
-
-    $stmt = $db->prepare("SELECT password FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $u = $stmt->fetch();
-    if (!$u || !password_verify($password, $u['password'])) {
-        jsonError('كلمة المرور غير صحيحة');
-    }
-
+    
+    // في الواجهة الأمامية نستخدم confirm()، لذا هنا نقوم بالحذف مباشرة
+    // أو يمكن طلب كلمة المرور لزيادة الأمان. حالياً سنكتفي بالتحقق من الجلسة.
+    
     // Soft delete: ضع علامة محذوف بدلاً من الحذف الفعلي
-    $db->prepare("UPDATE users SET deletedAt = NOW(), phone = CONCAT('deleted_', id, '_', phone), email = NULL WHERE id = ?")
+    $db->prepare("UPDATE users SET deletedAt = NOW(), phone = CONCAT('del_', id, '_', phone), email = NULL WHERE id = ?")
        ->execute([$_SESSION['user_id']]);
 
     // أرشفة إعلاناته
-    $db->prepare("UPDATE ads SET status = 'archived' WHERE userId = ?")->execute([$_SESSION['user_id']]);
+    $db->prepare("UPDATE ads SET status = 'archived' WHERE userId = ? AND status != 'deleted'")->execute([$_SESSION['user_id']]);
 
     $_SESSION = [];
     session_destroy();

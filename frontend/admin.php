@@ -100,7 +100,7 @@ async function renderUsers() {
     };
 }
 async function toggleBan(id, banned) {
-    const res = await api('admin&action=' + (banned ? 'unban_user' : 'ban_user'), { method: 'POST', data: { user_id: id, userId: id } });
+    const res = await api('admin&action=' + (banned ? 'unban_user' : 'ban_user'), { method: 'POST', data: { user_id: id } });
     toast(res.message, res.success ? 'success' : 'error');
     if (res.success) renderUsers();
 }
@@ -129,11 +129,11 @@ async function renderAds() {
         </div>`;
 }
 async function adminDeleteAd(id) {
-    confirmModal('حذف الإعلان', 'سيتم حذفه نهائياً. متأكد؟', async () => {
-        const res = await api('admin&action=delete_ad', { method: 'POST', data: { ad_id: id, adId: id } });
+    if (confirm('حذف الإعلان؟ سيتم حذفه نهائياً.')) {
+        const res = await api('admin&action=delete_ad', { method: 'POST', data: { ad_id: id } });
         toast(res.message, res.success ? 'success' : 'error');
         if (res.success) renderAds();
-    });
+    }
 }
 async function renderReports() {
     const res = await api('admin&action=reports');
@@ -156,7 +156,7 @@ async function renderReports() {
         </div>`;
 }
 async function resolveReport(id) {
-    const res = await api('admin&action=resolve_report', { method: 'POST', data: { report_id: id, reportId: id } });
+    const res = await api('admin&action=resolve_report', { method: 'POST', data: { report_id: id } });
     toast(res.message, res.success ? 'success' : 'error');
     if (res.success) renderReports();
 }
@@ -185,7 +185,7 @@ async function renderCommissions() {
         </div>`;
 }
 async function approveCommission(id) {
-    const res = await api('admin&action=approve_commission', { method: 'POST', data: { commission_id: id, commissionId: id } });
+    const res = await api('admin&action=approve_commission', { method: 'POST', data: { id: id } });
     toast(res.message, res.success ? 'success' : 'error');
     if (res.success) renderCommissions();
 }

@@ -327,33 +327,7 @@ function clearFilters() {
 }
 window.clearFilters = clearFilters;
 
-function escapeHtml(s) {
-    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function renderAdCard(ad) {
-    const price = ad.price ? new Intl.NumberFormat('ar-YE').format(ad.price) + ' ر.ي' : 'قابل للتفاوض';
-    const img = ad.image || '';
-    const cat = ad.category || 'other';
-    const catLabels = {cars:'سيارات',realestate:'عقارات',electronics:'إلكترونيات',furniture:'أثاث',jobs:'وظائف',services:'خدمات',livestock:'حيوانات',other:'أخرى'};
-    return `
-        <a href="ad.php?id=${ad.id}" class="ad-card animate-fadeInUp">
-            <div class="ad-img">
-                ${img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(ad.title)}" loading="lazy">` : `<div class="ad-img-fallback">📦</div>`}
-                <span class="ad-badge">${catLabels[cat] || 'إعلان'}</span>
-                ${ad.isFeatured == 1 ? '<span class="ad-badge featured" style="top:auto;bottom:10px;">⭐ مميز</span>' : ''}
-            </div>
-            <div class="ad-body">
-                <div class="ad-title">${escapeHtml(ad.title)}</div>
-                <div class="ad-price">${price}</div>
-                <div class="ad-meta">
-                    <span>📍 ${escapeHtml(ad.city || '—')}</span>
-                    <span>👁 ${ad.views || 0}</span>
-                </div>
-            </div>
-        </a>
-    `;
-}
+// Helpers moved to app.js
 
 async function loadAds(append = false) {
     if (isLoading) return;

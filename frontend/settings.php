@@ -86,22 +86,22 @@ document.getElementById('passwordForm').onsubmit = async (e) => {
     if (res.success) e.target.reset();
 };
 async function sendOtp() {
-    const res = await api('auth&action=send_otp', { method: 'POST' });
+    const res = await api('auth&action=resend_otp', { method: 'POST' });
     toast(res.message + (res.dev_otp ? ' (Dev: ' + res.dev_otp + ')' : ''), res.success ? 'success' : 'error', 6000);
     if (res.success) document.getElementById('otpBox').style.display = 'block';
 }
 async function verifyOtp() {
     const otp = document.getElementById('otpInput').value;
-    const res = await api('auth&action=verify_otp', { method: 'POST', data: { otp } });
+    const res = await api('auth&action=verify_otp', { method: 'POST', data: { code: otp } });
     toast(res.message, res.success ? 'success' : 'error');
     if (res.success) setTimeout(() => location.reload(), 1000);
 }
 async function deleteAccount() {
-    confirmModal('حذف الحساب نهائيًا', 'هذا الإجراء لا رجعة فيه. ستفقد جميع البيانات والإعلانات. هل أنت متأكد؟', async () => {
+    if (confirm('حذف الحساب نهائيًا؟ هذا الإجراء لا رجعة فيه. ستفقد جميع البيانات والإعلانات.')) {
         const res = await api('auth&action=delete_account', { method: 'POST' });
         if (res.success) { toast('تم حذف الحساب', 'success'); setTimeout(() => location.href = 'index.php', 1500); }
         else toast(res.message, 'error');
-    }, 'نعم، احذف حسابي');
+    }
 }
 </script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
