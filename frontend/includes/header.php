@@ -52,6 +52,12 @@ if ($_me && function_exists('getDBConnection')) {
     <?php if (PAGE_OG_IMAGE): ?><meta name="twitter:image" content="<?= htmlspecialchars(PAGE_OG_IMAGE) ?>"><?php endif; ?>
 
     <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%233b6cf6"/><text x="32" y="42" font-family="Arial" font-size="32" font-weight="900" fill="white" text-anchor="middle">ح</text></svg>'>
+    <link rel="apple-touch-icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="40" fill="%233b6cf6"/><text x="90" y="120" font-family="Arial" font-size="90" font-weight="900" fill="white" text-anchor="middle">ح</text></svg>'>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="حراج اليمن">
+    <meta name="format-detection" content="telephone=no">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -90,8 +96,9 @@ if ($_me && function_exists('getDBConnection')) {
                 <span>أضف إعلان</span>
             </a>
 
-            <button class="icon-btn" onclick="toggleTheme()" aria-label="تبديل الوضع" title="تبديل الوضع">
-                <?= icon('moon', ['size'=>20]) ?>
+            <button class="icon-btn" onclick="toggleTheme()" aria-label="تبديل الوضع" title="تبديل الوضع المظلم/الفاتح" id="themeToggleBtn">
+                <span id="themeIconLight" style="display:none;"><?= icon('sun', ['size'=>20]) ?></span>
+                <span id="themeIconDark"><?= icon('moon', ['size'=>20]) ?></span>
             </button>
 
             <?php if ($_me): ?>
