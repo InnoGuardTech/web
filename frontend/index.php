@@ -1,473 +1,184 @@
 <?php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../backend/config.php';
+if (function_exists('secureSession')) { secureSession(); } else { session_start(); }
+define('PAGE_TITLE', 'حراج اليمن الفاخر — الإعلانات المبوبة الأولى في اليمن');
+define('PAGE_DESC', 'منصة الحراج الأفخم في اليمن. تصفح آلاف الإعلانات في السيارات والعقارات والإلكترونيات.');
 
-define('PAGE_TITLE', SITE_NAME . ' - ' . SITE_SLOGAN);
-define('PAGE_DESC', 'أكبر منصة للبيع والشراء في اليمن. تصفّح آلاف الإعلانات في السيارات، العقارات، الإلكترونيات، والمزيد.');
-define('SHOW_SIDEBAR_TOGGLE', true);
-define('PAGE_URL', APP_URL . '/frontend/index.php');
+$pdo = getDBConnection();
+$stats = ['ads' => 0, 'users' => 0, 'cities' => count(getCities())];
+try { $stats['ads'] = (int)$pdo->query("SELECT COUNT(*) FROM ads WHERE status='active'")->fetchColumn(); } catch (Throwable $e) {}
+try { $stats['users'] = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE isBanned=0")->fetchColumn(); } catch (Throwable $e) {}
 
-include __DIR__ . '/includes/header.php';
+require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/icons.php';
 ?>
 
-<div class="home-container">
-    <!-- Sidebar -->
-    <aside class="sidebar-card animate-fade-in" id="main-sidebar">
-        <h3 class="sidebar-title">🚗 ماركات السيارات</h3>
-        <div class="brand-grid">
-            <?php
-            $brands = [
-                ['تويوتا','🚙','#e53e3e'],
-                ['هيونداي','🚗','#3182ce'],
-                ['مرسيدس','🏎️','#718096'],
-                ['لكزس','🚙','#dd6b20'],
-                ['نيسان','🚗','#4a5568'],
-                ['فورد','🚙','#2b6cb0'],
-                ['كيا','🚗','#805ad5'],
-                ['شيفروليه','🏎️','#d69e2e'],
-                ['BMW','🚗','#2c5282']
-            ];
-            foreach ($brands as $b) {
-                echo '<a href="#" class="brand-item" data-brand="' . htmlspecialchars($b[0]) . '" onclick="filterByBrand(\'' . htmlspecialchars($b[0], ENT_QUOTES) . '\', event)">';
-                echo '<span class="brand-logo">' . $b[1] . '</span>';
-                echo '<span>' . htmlspecialchars($b[0]) . '</span>';
-                echo '</a>';
-            }
-            ?>
-        </div>
+<section class="hero">
+    <h1>اشترِ وبِع بكل سهولة في حراج اليمن الفاخر</h1>
+    <p>منصة الإعلانات المبوبة الأولى في اليمن. سيارات، عقارات، إلكترونيات وأكثر — تجربة فاخرة وأمان كامل.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;position:relative;">
+        <a href="post.php" class="btn btn-gold btn-lg"><?= icon('plus', ['size'=>20]) ?> أضف إعلانك مجاناً</a>
+        <a href="#latest-ads" class="btn btn-lg" style="background:rgba(255,255,255,.15);color:#fff;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);">تصفّح الإعلانات</a>
+    </div>
+    <div class="hero-stats">
+        <div><div class="hero-stat-num"><?= number_format($stats['ads']) ?>+</div><div class="hero-stat-lbl">إعلان نشط</div></div>
+        <div><div class="hero-stat-num"><?= number_format($stats['users']) ?>+</div><div class="hero-stat-lbl">مستخدم موثوق</div></div>
+        <div><div class="hero-stat-num"><?= $stats['cities'] ?></div><div class="hero-stat-lbl">مدينة يمنية</div></div>
+    </div>
+</section>
 
-        <h3 class="sidebar-title">📁 جميع الأقسام</h3>
-        <div class="brand-list-all" id="categories-sidebar">
-            <div style="padding:1rem; text-align:center; color:var(--text-muted);">جاري التحميل...</div>
-        </div>
+<section style="margin-top:var(--sp-6);">
+    <div class="categories-bar" id="categoriesBar">
+        <button class="cat-pill active" data-cat="all">جميع الفئات</button>
+        <button class="cat-pill" data-cat="cars"><?= icon('car', ['size'=>16]) ?> سيارات</button>
+        <button class="cat-pill" data-cat="realestate"><?= icon('building', ['size'=>16]) ?> عقارات</button>
+        <button class="cat-pill" data-cat="electronics"><?= icon('smartphone', ['size'=>16]) ?> إلكترونيات</button>
+        <button class="cat-pill" data-cat="furniture"><?= icon('sofa', ['size'=>16]) ?> أثاث</button>
+        <button class="cat-pill" data-cat="jobs"><?= icon('briefcase', ['size'=>16]) ?> وظائف</button>
+        <button class="cat-pill" data-cat="services"><?= icon('tool', ['size'=>16]) ?> خدمات</button>
+        <button class="cat-pill" data-cat="livestock">حيوانات</button>
+        <button class="cat-pill" data-cat="other"><?= icon('box', ['size'=>16]) ?> أخرى</button>
+    </div>
+</section>
 
-        <h3 class="sidebar-title" style="margin-top: 1rem;">🏙️ المدن</h3>
-        <div id="cities-sidebar" style="display:flex; flex-wrap:wrap; gap:6px;">
-            <div style="padding:0.5rem; color:var(--text-muted); font-size:0.8rem;">جاري التحميل...</div>
+<div class="page-grid" id="latest-ads">
+    <aside class="sidebar-filters">
+        <h3><?= icon('filter', ['size'=>16]) ?> تصفية البحث <button class="btn-ghost btn-sm" onclick="clearFilters()" style="padding:4px 10px;font-size:12px;">مسح</button></h3>
+        <div class="filter-group">
+            <label class="field-label">المدينة</label>
+            <select class="select" id="filterCity">
+                <option value="">جميع المدن</option>
+                <?php foreach (getCities() as $c): ?><option value="<?= htmlspecialchars($c) ?>"><?= htmlspecialchars($c) ?></option><?php endforeach; ?>
+            </select>
         </div>
+        <div class="filter-group">
+            <label class="field-label">السعر (ر.ي)</label>
+            <div class="range-row">
+                <input type="number" class="input" id="filterMinPrice" placeholder="من">
+                <input type="number" class="input" id="filterMaxPrice" placeholder="إلى">
+            </div>
+        </div>
+        <div class="filter-group" id="yearFilterGroup" style="display:none;">
+            <label class="field-label">سنة الصنع</label>
+            <div class="range-row">
+                <input type="number" class="input" id="filterMinYear" placeholder="من" min="1980" max="2026">
+                <input type="number" class="input" id="filterMaxYear" placeholder="إلى" min="1980" max="2026">
+            </div>
+        </div>
+        <div class="filter-group"><button class="btn btn-primary btn-block" onclick="applyFilters()">تطبيق التصفية</button></div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="animate-fade-in">
-
-        <!-- Category Tabs -->
-        <div class="filter-tabs" id="categories-tabs">
-            <!-- Dynamic -->
-        </div>
-
-        <!-- Advanced Filters -->
-        <div class="advanced-filters">
-            <div class="filter-chip">
-                <span>📍</span>
-                <select id="city-select" onchange="loadAds()" aria-label="المدينة">
-                    <option value="الكل">كل المدن</option>
-                </select>
-            </div>
-
-            <div class="filter-chip">
-                <span>↕️</span>
-                <select id="sort-select" onchange="loadAds()" aria-label="الترتيب">
-                    <option value="newest">الأحدث</option>
-                    <option value="popular">الأكثر مشاهدة</option>
-                    <option value="cheapest">الأرخص</option>
-                    <option value="expensive">الأغلى</option>
+    <section>
+        <div class="toolbar">
+            <div class="toolbar-title"><span id="adsTitle">جميع الإعلانات</span> <small id="adsCount"></small></div>
+            <div class="toolbar-controls">
+                <select class="select" id="sortBy" onchange="applyFilters()" style="height:38px;width:auto;padding:0 32px;">
+                    <option value="latest">الأحدث</option>
                     <option value="oldest">الأقدم</option>
+                    <option value="cheapest">السعر: من الأقل</option>
+                    <option value="expensive">السعر: من الأعلى</option>
+                    <option value="popular">الأكثر مشاهدة</option>
                 </select>
             </div>
-
-            <div class="filter-chip">
-                <span>💰 من</span>
-                <input type="number" id="min-price" placeholder="0" min="0" oninput="debouncedReload()" aria-label="أدنى سعر">
-            </div>
-
-            <div class="filter-chip">
-                <span>💰 إلى</span>
-                <input type="number" id="max-price" placeholder="∞" min="0" oninput="debouncedReload()" aria-label="أعلى سعر">
-            </div>
-
-            <div class="filter-chip" id="year-filter" style="display:none;">
-                <span>📅 من سنة</span>
-                <input type="number" id="min-year" placeholder="1990" min="1980" max="2030" oninput="debouncedReload()">
-            </div>
-            <div class="filter-chip" id="year-filter-max" style="display:none;">
-                <span>إلى</span>
-                <input type="number" id="max-year" placeholder="2026" min="1980" max="2030" oninput="debouncedReload()">
-            </div>
-
-            <button onclick="resetFilters()" style="background:transparent; border:1px solid var(--border-color); padding:0.4rem 0.8rem; border-radius:var(--radius-full); font-size:0.78rem; cursor:pointer; color:var(--text-muted); font-weight:700;">🔄 إعادة تعيين</button>
-
-            <div style="margin-right:auto; display:flex; gap:6px;">
-                <button onclick="setView('list')" id="view-list-btn" class="view-btn active" title="عرض قائمة">≡</button>
-                <button onclick="setView('grid')" id="view-grid-btn" class="view-btn" title="عرض شبكي">▦</button>
-            </div>
         </div>
-
-        <div id="active-brand-indicator" style="display:none; margin-bottom:0.75rem;">
-            <span class="status-badge" style="background:var(--accent); color:var(--primary); padding:6px 12px; font-size:0.8rem;">
-                🚗 الماركة: <strong id="active-brand-name"></strong>
-                <button onclick="clearBrandFilter()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:900; margin-right:6px;">×</button>
-            </span>
-        </div>
-
-        <!-- Ads Container -->
-        <div class="ad-list" id="ads-container">
-            <div class="skeleton-row">
-                <div class="skeleton-row-main">
-                    <div class="skeleton-thumb"></div>
-                    <div class="skeleton-content">
-                        <div class="skeleton-title"></div>
-                        <div class="skeleton-meta"></div>
-                    </div>
-                </div>
-                <div class="skeleton-side">
-                    <div class="skeleton-price"></div>
-                    <div class="skeleton-city"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pagination -->
-        <div id="pagination" style="display:flex; justify-content:center; gap:6px; margin: 2rem 0; flex-wrap:wrap;"></div>
-    </main>
+        <div class="ads-grid" id="adsGrid"></div>
+        <div class="pagination" id="pagination"></div>
+    </section>
 </div>
 
-<style>
-.view-btn {
-    background: var(--bg-color);
-    border: 1px solid var(--border-color);
-    padding: 0.35rem 0.65rem;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    cursor: pointer;
-    color: var(--text-muted);
-    font-weight: 900;
-    transition: var(--transition);
-}
-.view-btn.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
-.page-btn {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    padding: 0.45rem 0.85rem;
-    border-radius: var(--radius-md);
-    font-weight: 800;
-    cursor: pointer;
-    font-size: 0.85rem;
-    color: var(--text-main);
-    transition: var(--transition);
-}
-.page-btn:hover { border-color: var(--primary); color: var(--primary); }
-.page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-</style>
-
-<script src="assets/js/app.js"></script>
 <script>
-    let state = {
-        cat: '<?= htmlspecialchars($_GET['cat'] ?? 'all') ?>',
-        city: '<?= htmlspecialchars($_GET['city'] ?? 'الكل') ?>',
-        brand: '',
-        q: '<?= htmlspecialchars($_GET['q'] ?? '') ?>',
-        sort: 'newest',
-        page: 1,
-        view: localStorage.getItem('adsView') || 'list'
+const filters = {
+    category: new URLSearchParams(location.search).get('category') || 'all',
+    city: new URLSearchParams(location.search).get('city') || '',
+    minPrice: '', maxPrice: '', minYear: '', maxYear: '',
+    sort: 'latest',
+    q: new URLSearchParams(location.search).get('q') || '',
+    page: 1
+};
+
+document.querySelectorAll('.cat-pill').forEach(btn => {
+    if (btn.dataset.cat === filters.category) {
+        document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    btn.onclick = () => {
+        document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filters.category = btn.dataset.cat;
+        filters.page = 1;
+        document.getElementById('yearFilterGroup').style.display = filters.category === 'cars' ? 'block' : 'none';
+        loadAds();
     };
+});
+if (filters.city) document.getElementById('filterCity').value = filters.city;
+if (filters.category === 'cars') document.getElementById('yearFilterGroup').style.display = 'block';
 
-    const debouncedReload = debounce(() => { state.page = 1; loadAds(); }, 500);
+function applyFilters() {
+    filters.city = document.getElementById('filterCity').value;
+    filters.minPrice = document.getElementById('filterMinPrice').value;
+    filters.maxPrice = document.getElementById('filterMaxPrice').value;
+    filters.minYear = document.getElementById('filterMinYear')?.value || '';
+    filters.maxYear = document.getElementById('filterMaxYear')?.value || '';
+    filters.sort = document.getElementById('sortBy').value;
+    filters.page = 1;
+    loadAds();
+}
+function clearFilters() {
+    document.getElementById('filterCity').value = '';
+    document.getElementById('filterMinPrice').value = '';
+    document.getElementById('filterMaxPrice').value = '';
+    if (document.getElementById('filterMinYear')) document.getElementById('filterMinYear').value = '';
+    if (document.getElementById('filterMaxYear')) document.getElementById('filterMaxYear').value = '';
+    Object.assign(filters, {city:'',minPrice:'',maxPrice:'',minYear:'',maxYear:'',page:1});
+    loadAds();
+}
 
-    async function init() {
-        // Cities
-        try {
-            const cityRes = await apiRequest('cities');
-            const sel = document.getElementById('city-select');
-            const sidebar = document.getElementById('cities-sidebar');
-            sidebar.innerHTML = '';
-            cityRes.data.forEach(city => {
-                const opt = document.createElement('option');
-                opt.value = city; opt.textContent = city;
-                sel.appendChild(opt);
+async function loadAds() {
+    const grid = document.getElementById('adsGrid');
+    grid.innerHTML = skeletonGrid(8);
+    const params = new URLSearchParams();
+    if (filters.category && filters.category !== 'all') params.append('category', filters.category);
+    if (filters.city) params.append('city', filters.city);
+    if (filters.minPrice) params.append('min_price', filters.minPrice);
+    if (filters.maxPrice) params.append('max_price', filters.maxPrice);
+    if (filters.minYear) params.append('min_year', filters.minYear);
+    if (filters.maxYear) params.append('max_year', filters.maxYear);
+    if (filters.q) params.append('q', filters.q);
+    params.append('sort', filters.sort);
+    params.append('page', filters.page);
 
-                const chip = document.createElement('a');
-                chip.href = '#';
-                chip.style.cssText = 'background:var(--bg-color); padding:4px 10px; border-radius:var(--radius-full); font-size:0.75rem; font-weight:700; color:var(--text-main); text-decoration:none; border:1px solid var(--border-color);';
-                chip.textContent = city;
-                chip.onclick = (e) => { e.preventDefault(); sel.value = city; state.city = city; state.page = 1; loadAds(); };
-                sidebar.appendChild(chip);
-            });
-            if (state.city !== 'الكل') sel.value = state.city;
-        } catch (e) {}
-
-        // Categories
-        try {
-            const catRes = await apiRequest('categories');
-            const tabs = document.getElementById('categories-tabs');
-            const sidebar = document.getElementById('categories-sidebar');
-            tabs.innerHTML = ''; sidebar.innerHTML = '';
-
-            catRes.data.forEach(cat => {
-                const tabBtn = document.createElement('button');
-                tabBtn.className = `filter-tab-btn ${cat.id === state.cat ? 'active' : ''}`;
-                tabBtn.innerHTML = `<span>${cat.icon}</span> ${cat.name}`;
-                tabBtn.onclick = () => selectCategory(cat.id);
-                tabs.appendChild(tabBtn);
-
-                const side = document.createElement('a');
-                side.href = '#';
-                side.className = `brand-list-all-item ${cat.id === state.cat ? 'active' : ''}`;
-                side.dataset.cat = cat.id;
-                side.innerHTML = `<span>${cat.icon}</span><span>${cat.name}</span>`;
-                side.onclick = (e) => { e.preventDefault(); selectCategory(cat.id); };
-                sidebar.appendChild(side);
-            });
-        } catch (e) {}
-
-        // initial search query
-        if (state.q) document.getElementById('header-search-input').value = state.q;
-
-        loadAds();
+    const res = await api('ads&action=list&' + params.toString());
+    if (!res.success) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><h3>تعذّر تحميل الإعلانات</h3><p>${res.message || 'حدث خطأ'}</p></div>`;
+        return;
     }
-
-    function selectCategory(catId) {
-        document.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.brand-list-all-item').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll(`[data-cat="${catId}"]`).forEach(b => b.classList.add('active'));
-        // tabs by text
-        document.querySelectorAll('.filter-tab-btn').forEach(b => {
-            if (b.textContent.trim().endsWith(getCategoryName(catId))) b.classList.add('active');
-        });
-        state.cat = catId;
-        state.page = 1;
-
-        // Show/hide year filter for cars
-        const yearFilter = document.getElementById('year-filter');
-        const yearMax = document.getElementById('year-filter-max');
-        if (catId === 'cars') {
-            yearFilter.style.display = 'flex';
-            yearMax.style.display = 'flex';
-        } else {
-            yearFilter.style.display = 'none';
-            yearMax.style.display = 'none';
-            state.brand = '';
-            document.getElementById('active-brand-indicator').style.display = 'none';
-        }
-        loadAds();
+    const ads = res.ads || res.data?.ads || res.data || [];
+    const total = res.total || res.data?.total || ads.length;
+    document.getElementById('adsCount').textContent = ads.length > 0 ? `(${total} إعلان)` : '';
+    if (ads.length === 0) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div style="font-size:60px;margin-bottom:12px;opacity:.4;">📭</div><h3>لا توجد إعلانات مطابقة</h3><p>جرّب تغيير الفلاتر أو ابحث في فئة أخرى</p><button class="btn btn-primary" onclick="clearFilters()">مسح الفلاتر</button></div>`;
+        document.getElementById('pagination').innerHTML = '';
+        return;
     }
+    grid.innerHTML = ads.map(renderAdCard).join('');
+    renderPagination(total, res.per_page || res.data?.per_page || 20, filters.page);
+}
 
-    function getCategoryName(id) {
-        const map = {all:'الكل',cars:'حراج السيارات',realestate:'عقارات',electronics:'أجهزة وإلكترونيات',
-                     livestock:'مواشي وحيوانات',furniture:'أثاث ومفروشات',jobs:'وظائف',services:'خدمات',other:'أخرى'};
-        return map[id] || id;
-    }
+function renderPagination(total, perPage, current) {
+    const pages = Math.ceil(total / perPage);
+    if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+    let html = `<button onclick="goPage(${current-1})" ${current<=1?'disabled':''}>السابق</button>`;
+    const start = Math.max(1, current - 2);
+    const end = Math.min(pages, current + 2);
+    if (start > 1) html += `<button onclick="goPage(1)">1</button>${start>2?'<span style="padding:0 6px;color:var(--muted);">...</span>':''}`;
+    for (let i = start; i <= end; i++) html += `<button class="${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    if (end < pages) html += `${end<pages-1?'<span style="padding:0 6px;color:var(--muted);">...</span>':''}<button onclick="goPage(${pages})">${pages}</button>`;
+    html += `<button onclick="goPage(${current+1})" ${current>=pages?'disabled':''}>التالي</button>`;
+    document.getElementById('pagination').innerHTML = html;
+}
+function goPage(p) { filters.page = p; loadAds(); window.scrollTo({top: document.getElementById('latest-ads').offsetTop - 80, behavior: 'smooth'}); }
 
-    async function loadAds() {
-        const container = document.getElementById('ads-container');
-
-        // Build query
-        const city = document.getElementById('city-select').value;
-        const sort = document.getElementById('sort-select').value;
-        const q = document.getElementById('header-search-input')?.value || state.q;
-        const minPrice = document.getElementById('min-price').value;
-        const maxPrice = document.getElementById('max-price').value;
-        const minYear = document.getElementById('min-year')?.value || '';
-        const maxYear = document.getElementById('max-year')?.value || '';
-
-        state.city = city;
-        state.sort = sort;
-        state.q = q;
-
-        // Skeleton
-        let skel = '';
-        for (let i = 0; i < 4; i++) skel += `
-            <div class="skeleton-row">
-                <div class="skeleton-row-main">
-                    <div class="skeleton-thumb"></div>
-                    <div class="skeleton-content">
-                        <div class="skeleton-title" style="width:70%;"></div>
-                        <div class="skeleton-meta" style="width:50%;"></div>
-                    </div>
-                </div>
-                <div class="skeleton-side">
-                    <div class="skeleton-price"></div>
-                    <div class="skeleton-city"></div>
-                </div>
-            </div>`;
-        container.innerHTML = skel;
-
-        try {
-            const params = new URLSearchParams({
-                cat: state.cat, city, brand: state.brand, q,
-                sort, page: state.page, per_page: 20
-            });
-            if (minPrice) params.set('min_price', minPrice);
-            if (maxPrice) params.set('max_price', maxPrice);
-            if (minYear) params.set('min_year', minYear);
-            if (maxYear) params.set('max_year', maxYear);
-
-            const res = await apiRequest('ads&' + params.toString());
-            const ads = res.data.ads;
-            const total = res.data.total;
-            const totalPages = res.data.total_pages;
-
-            container.innerHTML = '';
-            container.className = state.view === 'grid' ? 'ads-grid' : 'ad-list';
-
-            if (ads.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align:center; padding:4rem 1rem; color:var(--text-muted);">
-                        <div style="font-size:4rem; opacity:0.3;">🔍</div>
-                        <h3 style="margin:1rem 0 0.5rem; color:var(--text-main);">لا توجد نتائج</h3>
-                        <p>جرّب تغيير معايير البحث أو الفلاتر</p>
-                        <button onclick="resetFilters()" class="btn-outline" style="margin-top:1rem;">إعادة تعيين الفلاتر</button>
-                    </div>`;
-                document.getElementById('pagination').innerHTML = '';
-                return;
-            }
-
-            ads.forEach(ad => {
-                const pinBadge = ad.isPinned ? '<span class="badge-pinned">📌 مثبت</span>' : '';
-                const verifiedBadge = ad.verified ? '<span class="badge-verified">✓ موثق</span>' : '';
-
-                let cardHtml;
-                if (state.view === 'grid') {
-                    cardHtml = `
-                        <a href="ad.php?id=${ad.id}${ad.slug ? '&slug='+encodeURIComponent(ad.slug) : ''}" class="ad-card animate-fade-in">
-                            <img class="ad-card-img" src="${ad.image}" alt="${escapeHtml(ad.title)}" loading="lazy">
-                            <div class="ad-card-body">
-                                <h3 class="ad-card-title">${pinBadge} ${escapeHtml(ad.title)}</h3>
-                                <div class="ad-card-price">${ad.price}</div>
-                                <div class="ad-card-meta">
-                                    <span>📍 ${escapeHtml(ad.city)}</span>
-                                    <span>⏱️ ${escapeHtml(ad.date)}</span>
-                                </div>
-                            </div>
-                        </a>`;
-                } else {
-                    cardHtml = `
-                        <a href="ad.php?id=${ad.id}${ad.slug ? '&slug='+encodeURIComponent(ad.slug) : ''}" class="ad-row animate-fade-in">
-                            <div class="ad-row-main">
-                                <img class="ad-row-thumb" src="${ad.image}" alt="${escapeHtml(ad.title)}" loading="lazy">
-                                <div class="ad-row-content">
-                                    <h3 class="ad-row-title">${pinBadge} ${escapeHtml(ad.title)}</h3>
-                                    <div class="ad-row-meta">
-                                        <div class="ad-row-meta-item">👤 ${verifiedBadge}<span>${escapeHtml(ad.userName)}</span></div>
-                                        <div class="ad-row-meta-item">⏱️ <span>${escapeHtml(ad.date)}</span></div>
-                                        <div class="ad-row-meta-item">👁️ <span>${ad.views || 0}</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ad-row-side">
-                                <div class="ad-row-price">${ad.price}</div>
-                                <div class="ad-row-city">📍 ${escapeHtml(ad.city)}</div>
-                            </div>
-                        </a>`;
-                }
-                container.insertAdjacentHTML('beforeend', cardHtml);
-            });
-
-            renderPagination(totalPages, state.page, total);
-
-        } catch (e) {
-            container.innerHTML = `<div style="text-align:center; padding:3rem; color:var(--danger); font-weight:bold;">حدث خطأ أثناء التحميل: ${escapeHtml(e.message)}</div>`;
-        }
-    }
-
-    function renderPagination(totalPages, current, total) {
-        const pag = document.getElementById('pagination');
-        if (totalPages <= 1) {
-            pag.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem;">إجمالي ${total} إعلان</div>`;
-            return;
-        }
-
-        let html = `<button class="page-btn" onclick="goToPage(${current - 1})" ${current === 1 ? 'disabled' : ''}>‹ السابق</button>`;
-
-        const showPages = [];
-        showPages.push(1);
-        for (let i = current - 1; i <= current + 1; i++) {
-            if (i > 1 && i < totalPages) showPages.push(i);
-        }
-        if (totalPages > 1) showPages.push(totalPages);
-        const unique = [...new Set(showPages)].sort((a,b) => a-b);
-
-        let prev = 0;
-        unique.forEach(p => {
-            if (prev && p - prev > 1) html += `<span style="padding:0 6px; color:var(--text-muted);">...</span>`;
-            html += `<button class="page-btn ${p === current ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
-            prev = p;
-        });
-
-        html += `<button class="page-btn" onclick="goToPage(${current + 1})" ${current === totalPages ? 'disabled' : ''}>التالي ›</button>`;
-        html += `<div style="width:100%; text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">صفحة ${current} من ${totalPages} — إجمالي ${total} إعلان</div>`;
-        pag.innerHTML = html;
-    }
-
-    function goToPage(p) {
-        if (p < 1) return;
-        state.page = p;
-        loadAds();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function filterByBrand(brand, e) {
-        if (e) e.preventDefault();
-        document.querySelectorAll('.brand-item').forEach(b => b.classList.remove('active'));
-        const activeBrand = document.querySelector(`.brand-item[data-brand="${brand}"]`);
-        if (activeBrand) activeBrand.classList.add('active');
-
-        // Switch to cars
-        selectCategory('cars');
-
-        state.brand = brand;
-        document.getElementById('active-brand-name').textContent = brand;
-        document.getElementById('active-brand-indicator').style.display = 'block';
-
-        state.page = 1;
-        loadAds();
-    }
-
-    function clearBrandFilter() {
-        document.querySelectorAll('.brand-item').forEach(b => b.classList.remove('active'));
-        state.brand = '';
-        document.getElementById('active-brand-indicator').style.display = 'none';
-        state.page = 1;
-        loadAds();
-    }
-
-    function resetFilters() {
-        document.getElementById('city-select').value = 'الكل';
-        document.getElementById('sort-select').value = 'newest';
-        document.getElementById('min-price').value = '';
-        document.getElementById('max-price').value = '';
-        const my = document.getElementById('min-year'); if (my) my.value = '';
-        const myx = document.getElementById('max-year'); if (myx) myx.value = '';
-        document.getElementById('header-search-input').value = '';
-        state = { ...state, city:'الكل', sort:'newest', q:'', brand:'', page:1 };
-        document.getElementById('active-brand-indicator').style.display = 'none';
-        loadAds();
-    }
-
-    function setView(v) {
-        state.view = v;
-        localStorage.setItem('adsView', v);
-        document.getElementById('view-list-btn').classList.toggle('active', v === 'list');
-        document.getElementById('view-grid-btn').classList.toggle('active', v === 'grid');
-        loadAds();
-    }
-
-    // Search input debounced
-    const searchInput = document.getElementById('header-search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(() => { state.page = 1; loadAds(); }, 500));
-        searchInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') { state.page = 1; loadAds(); }
-        });
-    }
-
-    // Init view button
-    setView(state.view);
-
-    document.addEventListener('DOMContentLoaded', init);
+loadAds();
 </script>
-</body>
-</html>
+
+<?php require __DIR__ . '/includes/footer.php'; ?>

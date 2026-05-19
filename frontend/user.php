@@ -1,163 +1,91 @@
 <?php
-require_once __DIR__ . '/../config.php';
-$userId = (int)($_GET['id'] ?? 0);
-define('PAGE_TITLE', 'الملف الشخصي - ' . SITE_NAME);
-include __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../backend/config.php';
+if (function_exists('secureSession')) { secureSession(); } else { session_start(); }
+$uid = (int)($_GET['id'] ?? 0);
+if (!$uid) { header('Location: index.php'); exit; }
+$pdo = getDBConnection();
+$st = $pdo->prepare("SELECT id, name, isPhoneVerified AS phone_verified, rating, bio, createdAt AS created_at, phone, lastSeenAt AS last_seen FROM users WHERE id=:id AND isBanned=0 LIMIT 1");
+$st->execute([':id' => $uid]);
+$user = $st->fetch(PDO::FETCH_ASSOC);
+if (!$user) {
+    require __DIR__ . '/includes/header.php';
+    echo '<div class="empty-state" style="padding:80px 20px;"><h3>المستخدم غير موجود</h3></div>';
+    require __DIR__ . '/includes/footer.php';
+    exit;
+}
+$me = isset($_SESSION['user_id']) ? getCurrentUser() : null;
+$isOwn = $me && $me['id'] == $uid;
+$isOnline = false;
+try {
+    $p = $pdo->prepare("SELECT status FROM user_presence WHERE userId=:u LIMIT 1");
+    $p->execute([':u' => $uid]);
+    $isOnline = ($p->fetchColumn() === 'online');
+} catch (Throwable $e) {}
+
+define('PAGE_TITLE', $user['name'] . ' | حراج اليمن');
+require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/icons.php';
+
+$active = $sold = 0;
+try {
+    $active = (int)$pdo->query("SELECT COUNT(*) FROM ads WHERE userId=$uid AND status='active'")->fetchColumn();
+    $sold = (int)$pdo->query("SELECT COUNT(*) FROM ads WHERE userId=$uid AND status='sold'")->fetchColumn();
+} catch (Throwable $e) {}
+$total = $active + $sold;
 ?>
-<style>
-.profile-header { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; padding: 2rem 1.5rem; border-radius: var(--radius-xl); margin-bottom: 1.5rem; }
-.profile-top { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
-.profile-avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--accent); overflow: hidden; flex-shrink: 0; }
-.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.profile-info { flex: 1; min-width: 200px; }
-.profile-info h1 { margin: 0 0 0.4rem; font-weight: 900; font-size: 1.5rem; }
-.profile-info .sub { opacity: 0.85; font-size: 0.9rem; margin-bottom: 0.5rem; }
-.profile-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.85rem; margin-top: 1.25rem; }
-.stat-box { background: rgba(255,255,255,0.1); border-radius: var(--radius-md); padding: 0.85rem; text-align: center; }
-.stat-box .num { font-size: 1.4rem; font-weight: 900; }
-.stat-box .label { font-size: 0.75rem; opacity: 0.85; }
-.profile-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.25rem; }
-@media (max-width: 768px) { .profile-grid { grid-template-columns: 1fr; } }
-.review-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.9rem; margin-bottom: 0.6rem; }
-.review-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
-.review-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; }
-.review-avatar img { width: 100%; height: 100%; object-fit: cover; }
-</style>
-
-<div class="container animate-fade-in">
-    <div id="profile-container" class="hidden">
-        <div class="profile-header">
-            <div class="profile-top">
-                <div class="profile-avatar"><img id="p-avatar" src="" alt=""></div>
-                <div class="profile-info">
-                    <h1 id="p-name">...</h1>
-                    <div class="sub">⭐ <span id="p-rating">...</span> (<span id="p-count">0</span> تقييم) · انضم في <span id="p-joined">...</span></div>
-                    <div id="p-bio" style="opacity:0.9; font-size:0.9rem;"></div>
-                </div>
+<div class="surface-card" style="padding:var(--sp-6);margin-bottom:var(--sp-5);">
+    <div style="display:flex;align-items:center;gap:var(--sp-5);flex-wrap:wrap;">
+        <div class="avatar-circle avatar-lg" style="background:linear-gradient(135deg,var(--brand-500),var(--brand-700));font-size:32px;"><?= mb_substr($user['name'], 0, 1, 'UTF-8') ?></div>
+        <div style="flex:1;min-width:200px;">
+            <h1 style="font-size:24px;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <?= htmlspecialchars($user['name']) ?>
+                <?php if ($user['phone_verified']): ?><span style="color:var(--success);display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(16,185,129,.1);"><?= icon('check-circle', ['size'=>14]) ?> موثّق</span><?php endif; ?>
+                <?php if ($isOnline): ?><span style="color:var(--success);font-size:12px;display:inline-flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);"></span> متصل</span><?php endif; ?>
+            </h1>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px;font-size:13.5px;color:var(--muted);">
+                <span><?= icon('star', ['size'=>14]) ?> <?= number_format((float)$user['rating'], 1) ?>/5.0</span>
+                <span><?= icon('calendar', ['size'=>14]) ?> عضو منذ <?= date('Y', strtotime($user['created_at'])) ?></span>
+                <span><?= icon('list', ['size'=>14]) ?> <?= $total ?> إعلان</span>
             </div>
-            <div class="profile-stats">
-                <div class="stat-box"><div class="num" id="s-total">0</div><div class="label">إجمالي الإعلانات</div></div>
-                <div class="stat-box"><div class="num" id="s-active">0</div><div class="label">نشطة</div></div>
-                <div class="stat-box"><div class="num" id="s-sold">0</div><div class="label">تم البيع</div></div>
-                <div class="stat-box"><div class="num" id="s-views">0</div><div class="label">إجمالي المشاهدات</div></div>
-            </div>
+            <?php if (!empty($user['bio'])): ?><p style="margin-top:10px;color:var(--text-soft);font-size:14px;line-height:1.6;"><?= nl2br(htmlspecialchars($user['bio'])) ?></p><?php endif; ?>
         </div>
-
-        <div class="profile-grid">
-            <div class="section-block premium-card">
-                <h3 style="margin:0 0 1rem; font-weight:900; color:var(--primary); border-bottom:2px solid var(--accent); padding-bottom:0.5rem;">📋 إعلانات المستخدم</h3>
-                <div id="user-ads" class="ad-list" style="max-height:600px; overflow-y:auto;"></div>
-            </div>
-            <div class="section-block premium-card">
-                <h3 style="margin:0 0 1rem; font-weight:900; color:var(--primary); border-bottom:2px solid var(--accent); padding-bottom:0.5rem;">⭐ التقييمات</h3>
-                <div id="reviews-list" style="max-height:500px; overflow-y:auto;"></div>
-                <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $userId): ?>
-                <button class="btn-outline btn-block" onclick="openReviewForm()" style="margin-top:1rem;">✍️ أضف تقييم</button>
-                <?php endif; ?>
-            </div>
+        <?php if ($me && !$isOwn): ?>
+        <div style="display:flex;gap:8px;flex-direction:column;">
+            <a href="https://wa.me/967<?= $user['phone'] ?>" target="_blank" class="btn btn-success btn-sm"><?= icon('whatsapp', ['size'=>16]) ?> واتساب</a>
+            <button class="btn btn-primary btn-sm" onclick="startDM()"><?= icon('message', ['size'=>16]) ?> رسالة</button>
         </div>
+        <?php elseif ($isOwn): ?>
+            <a href="settings.php" class="btn btn-secondary btn-sm"><?= icon('settings', ['size'=>16]) ?> تعديل الملف</a>
+        <?php endif; ?>
     </div>
-    <div id="loading" style="text-align:center; padding:4rem;">جاري التحميل...</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:var(--sp-5);padding-top:var(--sp-5);border-top:1px solid var(--line-soft);">
+        <div style="text-align:center;"><div style="font-size:24px;font-weight:800;color:var(--brand-600);"><?= $total ?></div><div style="font-size:12px;color:var(--muted);">إجمالي الإعلانات</div></div>
+        <div style="text-align:center;"><div style="font-size:24px;font-weight:800;color:var(--success);"><?= $active ?></div><div style="font-size:12px;color:var(--muted);">نشطة</div></div>
+        <div style="text-align:center;"><div style="font-size:24px;font-weight:800;"><?= $sold ?></div><div style="font-size:12px;color:var(--muted);">مباعة</div></div>
+        <div style="text-align:center;"><div style="font-size:24px;font-weight:800;color:var(--gold-600);"><?= number_format((float)$user['rating'], 1) ?></div><div style="font-size:12px;color:var(--muted);">التقييم</div></div>
+    </div>
 </div>
 
-<script src="assets/js/app.js"></script>
+<h2 style="font-size:20px;font-weight:800;margin-bottom:var(--sp-4);">إعلانات <?= htmlspecialchars($user['name']) ?></h2>
+<div class="ads-grid" id="userAds"></div>
+
 <script>
-const USER_ID = <?= $userId ?>;
-const ME = <?= isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0 ?>;
-
-async function load() {
-    try {
-        const r = await apiRequest('user&action=profile&id=' + USER_ID);
-        const d = r.data;
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('profile-container').classList.remove('hidden');
-
-        document.getElementById('p-avatar').src = d.user.avatar_url;
-        document.getElementById('p-name').textContent = d.user.name;
-        document.getElementById('p-rating').textContent = parseFloat(d.user.rating).toFixed(1);
-        document.getElementById('p-count').textContent = d.user.ratingCount || 0;
-        document.getElementById('p-joined').textContent = d.user.joinedDate;
-        document.getElementById('p-bio').textContent = d.user.bio || '';
-
-        document.getElementById('s-total').textContent = d.stats.total;
-        document.getElementById('s-active').textContent = d.stats.active;
-        document.getElementById('s-sold').textContent = d.stats.sold;
-        document.getElementById('s-views').textContent = formatNumber(d.stats.views);
-
-        const adsBox = document.getElementById('user-ads');
-        adsBox.innerHTML = d.ads.length ? d.ads.map(a => `
-            <a href="ad.php?id=${a.id}" class="ad-row" style="padding:0.6rem;">
-                <div class="ad-row-main">
-                    <img class="ad-row-thumb" style="width:60px; height:60px;" src="${a.image}" alt="">
-                    <div class="ad-row-content">
-                        <h3 class="ad-row-title" style="font-size:0.88rem;">${escapeHtml(a.title)}</h3>
-                        <div class="ad-row-meta" style="font-size:0.7rem;">
-                            <div class="ad-row-meta-item">📍 ${a.city}</div>
-                            <div class="ad-row-meta-item">⏱️ ${a.date}</div>
-                            ${a.status === 'sold' ? '<span class="status-badge status-sold">تم البيع</span>' : ''}
-                        </div>
-                    </div>
-                </div>
-                <div class="ad-row-side"><div class="ad-row-price" style="font-size:0.9rem;">${a.price}</div></div>
-            </a>`).join('') : '<div style="text-align:center; padding:2rem; color:var(--text-muted);">لا توجد إعلانات</div>';
-
-        const revBox = document.getElementById('reviews-list');
-        revBox.innerHTML = d.reviews.length ? d.reviews.map(r => `
-            <div class="review-card">
-                <div class="review-header">
-                    <div class="review-avatar"><img src="${r.authorAvatar}" alt=""></div>
-                    <div>
-                        <div style="font-weight:800;">${escapeHtml(r.author)}</div>
-                        <div style="font-size:0.75rem; color:var(--text-muted);">${getStarsHTML(r.rating)} · ${r.date}</div>
-                    </div>
-                </div>
-                <div style="font-size:0.88rem;">${escapeHtml(r.content)}</div>
-            </div>`).join('') : '<div style="text-align:center; padding:2rem; color:var(--text-muted);">لا توجد تقييمات</div>';
-    } catch(e) {
-        document.getElementById('loading').innerHTML = '<h3>المستخدم غير موجود</h3><a href="index.php">العودة</a>';
-    }
+const USER_ID = <?= $uid ?>;
+async function loadUserAds() {
+    const list = document.getElementById('userAds');
+    list.innerHTML = skeletonGrid(4);
+    const res = await api('user&action=profile&id=' + USER_ID);
+    if (!res.success) return list.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">تعذّر التحميل</div>`;
+    const ads = res.ads || res.data?.ads || [];
+    if (!ads.length) { list.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:40px;"><p>لا توجد إعلانات نشطة</p></div>`; return; }
+    list.innerHTML = ads.map(renderAdCard).join('');
 }
-
-function openReviewForm() {
-    openModal(`
-        <div class="modal-header"><h3>⭐ أضف تقييماً</h3><button class="modal-close" onclick="closeModal()">×</button></div>
-        <form class="modal-body" onsubmit="submitReview(event)">
-            <div class="form-group">
-                <label>التقييم</label>
-                <select id="r-rating">
-                    <option value="5">⭐⭐⭐⭐⭐ ممتاز</option>
-                    <option value="4">⭐⭐⭐⭐ جيد جداً</option>
-                    <option value="3">⭐⭐⭐ جيد</option>
-                    <option value="2">⭐⭐ سيء</option>
-                    <option value="1">⭐ سيء جداً</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>التعليق</label>
-                <textarea id="r-content" rows="3" placeholder="شارك تجربتك مع هذا البائع..." required minlength="5"></textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-outline" onclick="closeModal()">إلغاء</button>
-                <button type="submit" class="btn-primary">إرسال</button>
-            </div>
-        </form>
-    `);
+async function startDM() {
+    const msg = prompt('اكتب رسالتك:');
+    if (!msg) return;
+    const res = await api('chat&action=send', { method: 'POST', data: { to_user_id: USER_ID, toUserId: USER_ID, message: msg, body: msg } });
+    if (res.success) location.href = 'messages.php?thread=' + (res.threadId || res.data?.threadId || '');
 }
-
-async function submitReview(e) {
-    e.preventDefault();
-    try {
-        await apiRequest('user&action=add_review', 'POST', {
-            target_id: USER_ID,
-            rating: document.getElementById('r-rating').value,
-            content: document.getElementById('r-content').value
-        });
-        showToast('✓ تم إرسال التقييم', 'success');
-        closeModal();
-        load();
-    } catch (e) {}
-}
-
-document.addEventListener('DOMContentLoaded', load);
+loadUserAds();
 </script>
-</body></html>
+<?php require __DIR__ . '/includes/footer.php'; ?>

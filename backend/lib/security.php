@@ -29,7 +29,7 @@ if (!function_exists('requireCsrf')) {
         $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (empty($token)) {
             $body = json_decode(file_get_contents('php://input'), true);
-            $token = $body['_csrf'] ?? $_POST['_csrf'] ?? '';
+            $token = $body['_csrf'] ?? $body['csrf_token'] ?? $_POST['_csrf'] ?? $_POST['csrf_token'] ?? '';
         }
         if (!csrfVerify($token)) {
             http_response_code(419);

@@ -1,233 +1,134 @@
 <?php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../backend/config.php';
+if (function_exists('secureSession')) { secureSession(); } else { session_start(); }
 if (isset($_SESSION['user_id'])) { header('Location: index.php'); exit; }
-define('PAGE_TITLE', 'تسجيل الدخول - ' . SITE_NAME);
-define('PAGE_DESC', 'سجّل دخولك أو أنشئ حساباً جديداً في حراج اليمن');
-define('HIDE_SEARCH', true);
-include __DIR__ . '/includes/header.php';
+define('PAGE_TITLE', 'تسجيل الدخول | حراج اليمن الفاخر');
+require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/icons.php';
 ?>
-
-<style>
-.auth-wrap {
-    max-width: 480px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-}
-.auth-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
-    overflow: hidden;
-}
-.auth-tabs {
-    display: flex;
-    background: var(--bg-color);
-    border-bottom: 1px solid var(--border-color);
-}
-.auth-tab {
-    flex: 1;
-    padding: 1.1rem;
-    text-align: center;
-    cursor: pointer;
-    font-weight: 900;
-    color: var(--text-muted);
-    border-bottom: 3px solid transparent;
-    transition: var(--transition);
-    font-size: 0.95rem;
-}
-.auth-tab.active { color: var(--primary); border-bottom-color: var(--accent); background: var(--card-bg); }
-.auth-body { padding: 2rem; }
-.auth-body h2 { margin: 0 0 0.5rem; color: var(--primary); font-weight: 900; }
-.auth-body .sub { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem; }
-.auth-divider {
-    text-align: center;
-    padding: 1.5rem 2rem 0;
-    border-top: 1px dashed var(--border-color);
-    margin-top: 1rem;
-    font-size: 0.85rem;
-}
-.auth-divider a { color: var(--primary); font-weight: 800; }
-</style>
-
 <div class="auth-wrap">
-    <div class="auth-card animate-fade-in">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--brand-500),var(--brand-700));margin:0 auto 18px;display:grid;place-items:center;box-shadow:var(--sh-md);">
+                <span style="color:#fff;font-size:30px;font-weight:900;">ح</span>
+            </div>
+            <h1>أهلاً بك في حراج اليمن</h1>
+            <p>سوق الإعلانات الأفخم. سجل دخولك أو أنشئ حساباً جديداً</p>
+        </div>
         <div class="auth-tabs">
-            <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">تسجيل الدخول</div>
-            <div class="auth-tab" id="tab-register" onclick="switchTab('register')">إنشاء حساب</div>
+            <button class="active" data-tab="login">تسجيل الدخول</button>
+            <button data-tab="register">إنشاء حساب</button>
         </div>
-
         <div class="auth-body">
-            <!-- LOGIN -->
-            <form id="login-form" onsubmit="handleLogin(event)">
-                <h2>👋 أهلاً بعودتك!</h2>
-                <p class="sub">سجّل دخولك للوصول إلى حسابك</p>
-
-                <div class="form-group">
-                    <label>📱 رقم الجوال</label>
-                    <input type="tel" id="login-phone" placeholder="مثال: 777111111" required autocomplete="tel">
+            <form id="loginForm" class="auth-form">
+                <div class="field">
+                    <label class="field-label">رقم الجوال</label>
+                    <input type="tel" class="input" name="phone" placeholder="7XXXXXXXX" required pattern="7[0-9]{8}">
                 </div>
-                <div class="form-group">
-                    <label>🔒 كلمة المرور</label>
-                    <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                <div class="field">
+                    <label class="field-label">كلمة المرور</label>
+                    <input type="password" class="input" name="password" placeholder="••••••••" required minlength="6">
                 </div>
-
-                <button type="submit" class="btn-primary btn-block">دخول إلى حسابي →</button>
-
-                <div style="text-align:center; margin-top:1rem;">
-                    <a href="#" onclick="switchTab('forgot'); return false;" style="color: var(--primary); font-size:0.88rem; font-weight:800;">نسيت كلمة المرور؟</a>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-soft);cursor:pointer;">
+                        <input type="checkbox" name="remember"> تذكرني
+                    </label>
+                    <a href="#" onclick="event.preventDefault();showForgot()" style="font-size:13px;color:var(--brand-600);font-weight:600;">نسيت كلمة المرور؟</a>
                 </div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg"><?= icon('log-in', ['size'=>18]) ?> تسجيل الدخول</button>
             </form>
-
-            <!-- REGISTER -->
-            <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
-                <h2>🎉 انضم لنا!</h2>
-                <p class="sub">أنشئ حسابك الجديد في حراج اليمن</p>
-
-                <div class="form-group">
-                    <label>👤 الاسم الكامل</label>
-                    <input type="text" id="reg-name" placeholder="مثال: أحمد محمد" required minlength="3" maxlength="100">
+            <form id="registerForm" class="auth-form" style="display:none;">
+                <div class="field">
+                    <label class="field-label">الاسم الكامل</label>
+                    <input type="text" class="input" name="name" placeholder="أدخل اسمك" required minlength="3" maxlength="60">
                 </div>
-                <div class="form-group">
-                    <label>📱 رقم الجوال</label>
-                    <input type="tel" id="reg-phone" placeholder="777111111" required>
+                <div class="field">
+                    <label class="field-label">رقم الجوال</label>
+                    <input type="tel" class="input" name="phone" placeholder="7XXXXXXXX" required pattern="7[0-9]{8}">
                 </div>
-                <div class="form-group">
-                    <label>📧 البريد الإلكتروني (اختياري)</label>
-                    <input type="email" id="reg-email" placeholder="example@gmail.com">
+                <div class="field">
+                    <label class="field-label">كلمة المرور</label>
+                    <input type="password" class="input" name="password" placeholder="6 أحرف على الأقل" required minlength="6">
+                    <div class="field-hint">استخدم 6 أحرف على الأقل مع أرقام لمزيد من الأمان</div>
                 </div>
-                <div class="form-group">
-                    <label>🔒 كلمة المرور</label>
-                    <input type="password" id="reg-password" placeholder="على الأقل 6 أحرف وأرقام" required minlength="6" autocomplete="new-password">
-                    <small style="color: var(--text-muted); font-size:0.78rem;">يجب أن تحتوي على حرف ورقم على الأقل</small>
+                <div class="field" style="margin-bottom:18px;">
+                    <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--text-soft);cursor:pointer;line-height:1.6;">
+                        <input type="checkbox" required style="margin-top:4px;">
+                        <span>أوافق على <a href="#" style="color:var(--brand-600);">الشروط والأحكام</a> و<a href="#" style="color:var(--brand-600);">سياسة الخصوصية</a></span>
+                    </label>
                 </div>
-
-                <button type="submit" class="btn-primary btn-block">إنشاء حسابي ✓</button>
+                <button type="submit" class="btn btn-primary btn-block btn-lg"><?= icon('user', ['size'=>18]) ?> إنشاء حساب جديد</button>
             </form>
-
-            <!-- FORGOT -->
-            <form id="forgot-form" class="hidden" onsubmit="handleForgot(event)">
-                <h2>🔑 استعادة كلمة المرور</h2>
-                <p class="sub">أدخل رقم جوالك وسنرسل لك رمز التحقق</p>
-
-                <div class="form-group">
-                    <label>📱 رقم الجوال</label>
-                    <input type="tel" id="forgot-phone" placeholder="777111111" required>
-                </div>
-
-                <button type="submit" class="btn-primary btn-block">إرسال رمز التحقق</button>
-                <div style="text-align:center; margin-top:1rem;">
-                    <a href="#" onclick="switchTab('login'); return false;" style="color: var(--primary); font-size:0.85rem;">← العودة لتسجيل الدخول</a>
-                </div>
-            </form>
-
-            <!-- RESET -->
-            <form id="reset-form" class="hidden" onsubmit="handleReset(event)">
-                <h2>✓ إعادة تعيين كلمة المرور</h2>
-                <p class="sub">أدخل الرمز الذي وصلك وكلمة المرور الجديدة</p>
-
-                <div class="form-group">
-                    <label>📱 رقم الجوال</label>
-                    <input type="tel" id="reset-phone" readonly>
-                </div>
-                <div class="form-group">
-                    <label>🔢 رمز التحقق (6 أرقام)</label>
-                    <input type="text" id="reset-code" placeholder="123456" maxlength="6" required>
-                </div>
-                <div class="form-group">
-                    <label>🔒 كلمة المرور الجديدة</label>
-                    <input type="password" id="reset-password" placeholder="على الأقل 6 أحرف وأرقام" required minlength="6">
-                </div>
-
-                <button type="submit" class="btn-primary btn-block">تعيين كلمة المرور الجديدة</button>
-            </form>
+            <div class="auth-divider">حسابات تجريبية</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="chip" onclick="quickLogin('777111111','Admin@123')"><?= icon('shield', ['size'=>14]) ?> أدمن</button>
+                <button class="chip" onclick="quickLogin('777222222','User@123')"><?= icon('user', ['size'=>14]) ?> بائع</button>
+                <button class="chip" onclick="quickLogin('777444444','User@123')"><?= icon('shopping', ['size'=>14]) ?> مشتري</button>
+            </div>
         </div>
-
-        <div class="auth-divider">
-            بالتسجيل، فأنت توافق على شروط الاستخدام وسياسة الخصوصية للموقع
-        </div>
-    </div>
-
-    <div style="background: rgba(13,148,136,0.08); border:1px solid rgba(13,148,136,0.2); border-radius: var(--radius-lg); padding: 1rem; margin-top: 1.5rem; font-size: 0.85rem;">
-        <strong style="color: var(--secondary);">🔐 حسابات تجريبية للاختبار:</strong><br>
-        <span style="font-family:monospace; color: var(--text-muted); display: block; margin-top: 6px;">
-            مدير: <strong>777111111</strong> / <strong>Admin@123</strong><br>
-            مستخدم: <strong>777222222</strong> / <strong>User@123</strong>
-        </span>
     </div>
 </div>
-
-<script src="assets/js/app.js"></script>
 <script>
-function switchTab(tab) {
-    ['login','register','forgot','reset'].forEach(t => {
-        const f = document.getElementById(t + '-form');
-        if (f) f.classList.add('hidden');
-    });
-    const target = document.getElementById(tab + '-form');
-    if (target) target.classList.remove('hidden');
-
-    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-}
-
-async function handleLogin(e) {
+document.querySelectorAll('.auth-tabs button').forEach(b => {
+    b.onclick = () => {
+        document.querySelectorAll('.auth-tabs button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        document.getElementById('loginForm').style.display = b.dataset.tab === 'login' ? '' : 'none';
+        document.getElementById('registerForm').style.display = b.dataset.tab === 'register' ? '' : 'none';
+    };
+});
+document.getElementById('loginForm').onsubmit = async (e) => {
     e.preventDefault();
-    const phone = document.getElementById('login-phone').value;
-    const password = document.getElementById('login-password').value;
+    const data = Object.fromEntries(new FormData(e.target));
     const btn = e.target.querySelector('button[type=submit]');
-    btn.disabled = true; btn.textContent = '⏳ جاري الدخول...';
-
-    try {
-        const r = await apiRequest('auth&action=login', 'POST', { phone, password }, { skipCsrf: true });
-        showToast('🎉 تم تسجيل الدخول!', 'success');
-        setTimeout(() => window.location.href = 'index.php', 800);
-    } catch (err) {
-        btn.disabled = false; btn.textContent = 'دخول إلى حسابي →';
-    }
-}
-
-async function handleRegister(e) {
+    btn.disabled = true; btn.innerHTML = 'جارٍ الدخول...';
+    const res = await api('auth&action=login', { method: 'POST', data });
+    if (res.success) { toast('تم تسجيل الدخول بنجاح', 'success'); setTimeout(() => location.href = 'index.php', 600); }
+    else { toast(res.message || 'بيانات غير صحيحة', 'error'); btn.disabled = false; btn.innerHTML = 'تسجيل الدخول'; }
+};
+document.getElementById('registerForm').onsubmit = async (e) => {
     e.preventDefault();
-    const name = document.getElementById('reg-name').value.trim();
-    const phone = document.getElementById('reg-phone').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value;
+    const data = Object.fromEntries(new FormData(e.target));
     const btn = e.target.querySelector('button[type=submit]');
-    btn.disabled = true; btn.textContent = '⏳ جاري الإنشاء...';
-
-    try {
-        await apiRequest('auth&action=register', 'POST', { name, phone, email, password }, { skipCsrf: true });
-        showToast('✓ تم إنشاء حسابك!', 'success');
-        setTimeout(() => window.location.href = 'index.php', 1000);
-    } catch (err) {
-        btn.disabled = false; btn.textContent = 'إنشاء حسابي ✓';
-    }
+    btn.disabled = true; btn.innerHTML = 'جارٍ الإنشاء...';
+    const res = await api('auth&action=register', { method: 'POST', data });
+    if (res.success) { toast('تم إنشاء الحساب بنجاح', 'success'); setTimeout(() => location.href = 'index.php', 800); }
+    else { toast(res.message || 'تعذر إنشاء الحساب', 'error'); btn.disabled = false; btn.innerHTML = 'إنشاء حساب جديد'; }
+};
+async function quickLogin(phone, password) {
+    const res = await api('auth&action=login', { method: 'POST', data: { phone, password } });
+    if (res.success) { toast('تم الدخول السريع', 'success'); setTimeout(() => location.href = 'index.php', 500); }
+    else toast(res.message, 'error');
 }
-
-async function handleForgot(e) {
-    e.preventDefault();
-    const phone = document.getElementById('forgot-phone').value;
-    try {
-        await apiRequest('auth&action=forgot_password', 'POST', { phone }, { skipCsrf: true });
-        showToast('📩 إذا كان الرقم مسجلاً، فستصلك رسالة', 'success', 5000);
-        document.getElementById('reset-phone').value = phone;
-        switchTab('reset');
-    } catch (err) {}
-}
-
-async function handleReset(e) {
-    e.preventDefault();
-    const phone = document.getElementById('reset-phone').value;
-    const code = document.getElementById('reset-code').value;
-    const newPwd = document.getElementById('reset-password').value;
-
-    try {
-        await apiRequest('auth&action=reset_password', 'POST', { phone, code, new_password: newPwd }, { skipCsrf: true });
-        showToast('✓ تم تغيير كلمة المرور!', 'success');
-        setTimeout(() => switchTab('login'), 1500);
-    } catch (err) {}
+function showForgot() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal"><div class="modal-header"><h3>استعادة كلمة المرور</h3></div><div class="modal-body"><p style="color:var(--text-soft);margin-bottom:16px;">أدخل رقم جوالك وسنرسل لك رمز التحقق (OTP).</p><div id="forgotStep1"><input type="tel" class="input" id="forgotPhone" placeholder="7XXXXXXXX" pattern="7[0-9]{8}"></div><div id="forgotStep2" style="display:none;"><div class="field"><label class="field-label">رمز التحقق</label><input type="text" class="input" id="forgotOtp" placeholder="6 أرقام" maxlength="6"></div><div class="field"><label class="field-label">كلمة مرور جديدة</label><input type="password" class="input" id="forgotNewPass" placeholder="••••••••" minlength="6"></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">إلغاء</button><button class="btn btn-primary" id="forgotBtn">إرسال الرمز</button></div></div>`;
+    document.body.appendChild(overlay);
+    let step = 1;
+    document.getElementById('forgotBtn').onclick = async () => {
+        if (step === 1) {
+            const phone = document.getElementById('forgotPhone').value;
+            if (!/^7\d{8}$/.test(phone)) return toast('رقم جوال غير صحيح', 'error');
+            const res = await api('auth&action=forgot_password', { method: 'POST', data: { phone } });
+            if (res.success) {
+                toast('تم إرسال الرمز' + (res.dev_otp ? ' (Dev: ' + res.dev_otp + ')' : ''), 'success', 6000);
+                document.getElementById('forgotStep1').style.display = 'none';
+                document.getElementById('forgotStep2').style.display = 'block';
+                document.getElementById('forgotBtn').textContent = 'تأكيد التغيير';
+                step = 2;
+            } else toast(res.message, 'error');
+        } else {
+            const phone = document.getElementById('forgotPhone').value;
+            const otp = document.getElementById('forgotOtp').value;
+            const newPass = document.getElementById('forgotNewPass').value;
+            if (otp.length !== 6) return toast('أدخل الرمز كاملاً', 'error');
+            if (newPass.length < 6) return toast('كلمة المرور قصيرة', 'error');
+            const res = await api('auth&action=reset_password', { method: 'POST', data: { phone, otp, new_password: newPass } });
+            if (res.success) { toast('تم تغيير كلمة المرور', 'success'); overlay.remove(); }
+            else toast(res.message, 'error');
+        }
+    };
 }
 </script>
-</body>
-</html>
+<?php require __DIR__ . '/includes/footer.php'; ?>

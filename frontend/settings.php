@@ -1,231 +1,107 @@
 <?php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../backend/config.php';
+if (function_exists('secureSession')) { secureSession(); } else { session_start(); }
 if (!isset($_SESSION['user_id'])) { header('Location: auth.php'); exit; }
 $me = getCurrentUser();
-define('PAGE_TITLE', 'الإعدادات - ' . SITE_NAME);
-include __DIR__ . '/includes/header.php';
+define('PAGE_TITLE', 'الإعدادات | حراج اليمن');
+require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/icons.php';
 ?>
-<style>
-.settings-grid { display: grid; grid-template-columns: 240px 1fr; gap: 1.5rem; }
-@media (max-width: 768px) { .settings-grid { grid-template-columns: 1fr; } }
-.settings-nav { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 0.5rem; height: fit-content; }
-.settings-nav button { display: block; width: 100%; text-align: right; background: none; border: none; padding: 0.7rem 1rem; border-radius: var(--radius-md); color: var(--text-main); font-weight: 700; cursor: pointer; transition: var(--transition); font-family: inherit; font-size: 0.92rem; margin-bottom: 4px; }
-.settings-nav button:hover { background: var(--hover-bg); }
-.settings-nav button.active { background: var(--primary); color: white; }
-.tab-pane { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; }
-.tab-pane h3 { margin: 0 0 0.5rem; color: var(--primary); font-weight: 900; }
-.tab-pane .sub { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem; }
-.avatar-uploader { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
-.avatar-preview { width: 90px; height: 90px; border-radius: 50%; overflow: hidden; border: 3px solid var(--accent); }
-.avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
-</style>
+<div style="max-width:780px;margin:0 auto;">
+    <div style="margin-bottom:var(--sp-5);">
+        <h1 class="section-title">إعدادات الحساب</h1>
+        <p class="section-subtitle">إدارة معلوماتك الشخصية والأمان</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--sp-5);">
+        <button class="chip active" data-tab="profile"><?= icon('user', ['size'=>14]) ?> الملف الشخصي</button>
+        <button class="chip" data-tab="password"><?= icon('lock', ['size'=>14]) ?> كلمة المرور</button>
+        <button class="chip" data-tab="verify"><?= icon('shield', ['size'=>14]) ?> توثيق الجوال</button>
+        <button class="chip" data-tab="danger"><?= icon('alert', ['size'=>14]) ?> منطقة الخطر</button>
+    </div>
 
-<div class="container animate-fade-in">
-    <h2 style="margin:0 0 1.5rem; color:var(--primary); font-weight:900;">⚙️ الإعدادات</h2>
+    <div id="tab-profile" class="settings-tab surface-card" style="padding:var(--sp-6);">
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:var(--sp-4);">المعلومات الشخصية</h3>
+        <form id="profileForm">
+            <div class="field"><label class="field-label">الاسم الكامل</label><input type="text" class="input" name="name" value="<?= htmlspecialchars($me['name']) ?>" required minlength="3"></div>
+            <div class="field"><label class="field-label">رقم الجوال</label><input type="tel" class="input" value="<?= htmlspecialchars($me['phone']) ?>" disabled><div class="field-hint">لا يمكن تغيير الرقم. تواصل مع الإدارة عند الحاجة.</div></div>
+            <div class="field"><label class="field-label">نبذة عنك (اختياري)</label><textarea class="textarea" name="bio" maxlength="200" rows="3"><?= htmlspecialchars($me['bio'] ?? '') ?></textarea></div>
+            <button type="submit" class="btn btn-primary"><?= icon('check', ['size'=>16]) ?> حفظ التغييرات</button>
+        </form>
+    </div>
 
-    <div class="settings-grid">
-        <nav class="settings-nav">
-            <button class="active" onclick="showTab('profile', this)">👤 الملف الشخصي</button>
-            <button onclick="showTab('password', this)">🔒 كلمة المرور</button>
-            <button onclick="showTab('verify', this)">✓ تأكيد الجوال</button>
-            <button onclick="showTab('appearance', this)">🎨 المظهر</button>
-            <button onclick="showTab('danger', this)" style="color:var(--danger);">⚠️ حذف الحساب</button>
-        </nav>
+    <div id="tab-password" class="settings-tab surface-card" style="padding:var(--sp-6);display:none;">
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:var(--sp-4);">تغيير كلمة المرور</h3>
+        <form id="passwordForm">
+            <div class="field"><label class="field-label">كلمة المرور الحالية</label><input type="password" class="input" name="current_password" required></div>
+            <div class="field"><label class="field-label">كلمة المرور الجديدة</label><input type="password" class="input" name="new_password" required minlength="6"><div class="field-hint">6 أحرف على الأقل، ويفضل مع أرقام.</div></div>
+            <div class="field"><label class="field-label">تأكيد كلمة المرور</label><input type="password" class="input" name="confirm_password" required minlength="6"></div>
+            <button type="submit" class="btn btn-primary"><?= icon('lock', ['size'=>16]) ?> تحديث كلمة المرور</button>
+        </form>
+    </div>
 
-        <div>
-            <!-- Profile Tab -->
-            <div id="tab-profile" class="tab-pane">
-                <h3>👤 الملف الشخصي</h3>
-                <p class="sub">حدّث معلومات حسابك الأساسية</p>
-
-                <div class="avatar-uploader">
-                    <div class="avatar-preview"><img id="avatar-img" src="" alt=""></div>
-                    <div>
-                        <button class="btn-outline btn-sm" onclick="document.getElementById('avatar-input').click()">📷 تغيير الصورة</button>
-                        <input type="file" id="avatar-input" accept="image/*" style="display:none;" onchange="uploadAvatar(event)">
-                        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:6px;">JPG / PNG / WebP (حتى 5MB)</p>
-                    </div>
-                </div>
-
-                <form onsubmit="saveProfile(event)">
-                    <div class="form-group">
-                        <label>الاسم الكامل *</label>
-                        <input type="text" id="p-name" value="<?= htmlspecialchars($me['name']) ?>" required minlength="3" maxlength="100">
-                    </div>
-                    <div class="form-group">
-                        <label>📱 الجوال (لا يمكن تغييره)</label>
-                        <input type="tel" value="<?= htmlspecialchars($me['phone']) ?>" disabled>
-                    </div>
-                    <div class="form-group">
-                        <label>📧 البريد الإلكتروني</label>
-                        <input type="email" id="p-email" value="<?= htmlspecialchars($me['email'] ?? '') ?>">
-                    </div>
-                    <div class="form-group">
-                        <label>نبذة عني</label>
-                        <textarea id="p-bio" rows="3" maxlength="500"><?= htmlspecialchars($me['bio'] ?? '') ?></textarea>
-                    </div>
-                    <button type="submit" class="btn-primary">💾 حفظ التغييرات</button>
-                </form>
+    <div id="tab-verify" class="settings-tab surface-card" style="padding:var(--sp-6);display:none;">
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:var(--sp-4);">توثيق رقم الجوال</h3>
+        <?php if (!empty($me['phone_verified']) || !empty($me['isPhoneVerified'])): ?>
+            <div style="padding:20px;background:rgba(16,185,129,.1);border-radius:12px;color:var(--success);font-weight:600;"><?= icon('check-circle', ['size'=>18]) ?> تم توثيق رقم جوالك بنجاح</div>
+        <?php else: ?>
+            <p style="color:var(--text-soft);margin-bottom:var(--sp-4);">سنرسل لك رمز تحقق عبر SMS.</p>
+            <button class="btn btn-primary" onclick="sendOtp()">إرسال رمز التحقق</button>
+            <div id="otpBox" style="display:none;margin-top:var(--sp-4);">
+                <div class="field"><label class="field-label">أدخل الرمز (6 أرقام)</label><input type="text" class="input" id="otpInput" maxlength="6" style="text-align:center;font-size:20px;letter-spacing:.5em;"></div>
+                <button class="btn btn-success" onclick="verifyOtp()">تأكيد</button>
             </div>
+        <?php endif; ?>
+    </div>
 
-            <!-- Password Tab -->
-            <div id="tab-password" class="tab-pane hidden">
-                <h3>🔒 تغيير كلمة المرور</h3>
-                <p class="sub">حافظ على أمان حسابك بتغيير كلمة المرور دورياً</p>
-
-                <form onsubmit="changePassword(event)">
-                    <div class="form-group">
-                        <label>كلمة المرور الحالية</label>
-                        <input type="password" id="curr-pwd" required>
-                    </div>
-                    <div class="form-group">
-                        <label>كلمة المرور الجديدة (على الأقل 6 أحرف وأرقام)</label>
-                        <input type="password" id="new-pwd" required minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <label>تأكيد كلمة المرور الجديدة</label>
-                        <input type="password" id="conf-pwd" required minlength="6">
-                    </div>
-                    <button type="submit" class="btn-primary">🔐 تغيير كلمة المرور</button>
-                </form>
-            </div>
-
-            <!-- Verify Phone -->
-            <div id="tab-verify" class="tab-pane hidden">
-                <h3>✓ تأكيد رقم الجوال</h3>
-                <p class="sub">سيتم إرسال رمز تحقق إلى رقم جوالك <strong><?= htmlspecialchars($me['phone']) ?></strong></p>
-
-                <?php if ($me['isPhoneVerified']): ?>
-                <div style="background:rgba(16,185,129,0.1); border:1px solid var(--success); border-radius:var(--radius-md); padding:1rem; color:var(--success); font-weight:800;">
-                    ✓ تم تأكيد رقم جوالك بالفعل
-                </div>
-                <?php else: ?>
-                <button class="btn-primary" onclick="sendVerifyOtp()">📤 إرسال رمز التحقق</button>
-                <div id="verify-form" class="hidden" style="margin-top:1.5rem;">
-                    <div class="form-group">
-                        <label>الرمز المرسل (6 أرقام)</label>
-                        <input type="text" id="otp-code" placeholder="123456" maxlength="6">
-                    </div>
-                    <button class="btn-primary" onclick="verifyOtp()">✓ تأكيد</button>
-                    <button class="btn-outline" onclick="sendVerifyOtp()" style="margin-right:6px;">إعادة الإرسال</button>
-                </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- Appearance -->
-            <div id="tab-appearance" class="tab-pane hidden">
-                <h3>🎨 المظهر</h3>
-                <p class="sub">خصّص شكل الموقع كما تحب</p>
-
-                <div style="display:flex; gap:1rem; flex-wrap:wrap;">
-                    <button class="btn-outline" onclick="toggleTheme()">🌓 تبديل الوضع الداكن / الفاتح</button>
-                </div>
-            </div>
-
-            <!-- Danger Zone -->
-            <div id="tab-danger" class="tab-pane hidden">
-                <h3 style="color:var(--danger);">⚠️ حذف الحساب</h3>
-                <p class="sub">حذف حسابك إجراء لا يمكن التراجع عنه. سيتم أرشفة إعلاناتك.</p>
-
-                <form onsubmit="deleteAccount(event)" style="background:rgba(225,29,72,0.05); border:1px solid var(--danger); border-radius:var(--radius-md); padding:1.25rem;">
-                    <div class="form-group">
-                        <label>أدخل كلمة المرور للتأكيد</label>
-                        <input type="password" id="del-pwd" required>
-                    </div>
-                    <button type="submit" class="btn-danger">🗑️ حذف حسابي نهائياً</button>
-                </form>
-            </div>
+    <div id="tab-danger" class="settings-tab surface-card" style="padding:var(--sp-6);display:none;border-color:rgba(239,68,68,.3);">
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:var(--sp-4);color:var(--danger);">منطقة الخطر</h3>
+        <div style="padding:16px;border:1px solid rgba(239,68,68,.3);border-radius:12px;background:rgba(239,68,68,.05);">
+            <div style="font-weight:700;margin-bottom:6px;">حذف الحساب نهائيًا</div>
+            <p style="font-size:13px;color:var(--text-soft);margin-bottom:14px;line-height:1.6;">سيتم حذف حسابك وأرشفة جميع إعلاناتك. هذا الإجراء لا يمكن التراجع عنه.</p>
+            <button class="btn btn-danger btn-sm" onclick="deleteAccount()">حذف الحساب</button>
         </div>
     </div>
 </div>
-
-<script src="assets/js/app.js"></script>
 <script>
-async function loadAvatar() {
-    try {
-        const r = await apiRequest('auth&action=me');
-        document.getElementById('avatar-img').src = r.data.avatar_url;
-    } catch(e) {}
-}
-
-function showTab(tab, btn) {
-    ['profile','password','verify','appearance','danger'].forEach(t => {
-        document.getElementById('tab-' + t).classList.add('hidden');
-    });
-    document.getElementById('tab-' + tab).classList.remove('hidden');
-    document.querySelectorAll('.settings-nav button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-}
-
-async function saveProfile(e) {
+document.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.settings-tab').forEach(t => t.style.display = 'none');
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).style.display = '';
+    };
+});
+document.getElementById('profileForm').onsubmit = async (e) => {
     e.preventDefault();
-    try {
-        await apiRequest('auth&action=update_profile', 'POST', {
-            name: document.getElementById('p-name').value,
-            email: document.getElementById('p-email').value,
-            bio: document.getElementById('p-bio').value
-        });
-        showToast('✓ تم الحفظ', 'success');
-    } catch(e) {}
-}
-
-async function uploadAvatar(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5*1024*1024) { showToast('حجم الصورة كبير', 'warning'); return; }
-    try {
-        const dataUrl = await resizeImage(file, 400, 0.85);
-        const r = await apiRequest('auth&action=update_avatar', 'POST', { avatar: dataUrl });
-        document.getElementById('avatar-img').src = r.data.avatar;
-        showToast('✓ تم تحديث الصورة', 'success');
-    } catch (e) {}
-}
-
-async function changePassword(e) {
+    const data = Object.fromEntries(new FormData(e.target));
+    const res = await api('user&action=update_profile', { method: 'POST', data });
+    toast(res.message, res.success ? 'success' : 'error');
+};
+document.getElementById('passwordForm').onsubmit = async (e) => {
     e.preventDefault();
-    const newP = document.getElementById('new-pwd').value;
-    const conf = document.getElementById('conf-pwd').value;
-    if (newP !== conf) return showToast('كلمات المرور غير متطابقة', 'error');
-    try {
-        await apiRequest('auth&action=change_password', 'POST', {
-            current_password: document.getElementById('curr-pwd').value,
-            new_password: newP
-        });
-        showToast('✓ تم تغيير كلمة المرور', 'success');
-        document.querySelector('#tab-password form').reset();
-    } catch(e) {}
+    const data = Object.fromEntries(new FormData(e.target));
+    if (data.new_password !== data.confirm_password) return toast('كلمتا المرور غير متطابقتين', 'error');
+    const res = await api('auth&action=change_password', { method: 'POST', data });
+    toast(res.message, res.success ? 'success' : 'error');
+    if (res.success) e.target.reset();
+};
+async function sendOtp() {
+    const res = await api('auth&action=send_otp', { method: 'POST' });
+    toast(res.message + (res.dev_otp ? ' (Dev: ' + res.dev_otp + ')' : ''), res.success ? 'success' : 'error', 6000);
+    if (res.success) document.getElementById('otpBox').style.display = 'block';
 }
-
-async function sendVerifyOtp() {
-    try {
-        await apiRequest('auth&action=resend_otp', 'POST', {});
-        showToast('📩 تم إرسال الرمز', 'success');
-        document.getElementById('verify-form').classList.remove('hidden');
-    } catch(e) {}
-}
-
 async function verifyOtp() {
-    const code = document.getElementById('otp-code').value;
-    if (!code) return;
-    try {
-        await apiRequest('auth&action=verify_otp', 'POST', { code, purpose: 'verify_phone' });
-        showToast('✓ تم التأكيد', 'success');
-        setTimeout(() => location.reload(), 1000);
-    } catch(e) {}
+    const otp = document.getElementById('otpInput').value;
+    const res = await api('auth&action=verify_otp', { method: 'POST', data: { otp } });
+    toast(res.message, res.success ? 'success' : 'error');
+    if (res.success) setTimeout(() => location.reload(), 1000);
 }
-
-async function deleteAccount(e) {
-    e.preventDefault();
-    if (!await confirmModal('سيتم حذف حسابك نهائياً وأرشفة جميع إعلاناتك. هل أنت متأكد؟', '⚠️ تحذير نهائي')) return;
-    try {
-        await apiRequest('auth&action=delete_account', 'POST', {
-            password: document.getElementById('del-pwd').value
-        });
-        showToast('تم حذف الحساب 😔', 'success');
-        setTimeout(() => window.location.href = 'index.php', 1500);
-    } catch(e) {}
+async function deleteAccount() {
+    confirmModal('حذف الحساب نهائيًا', 'هذا الإجراء لا رجعة فيه. ستفقد جميع البيانات والإعلانات. هل أنت متأكد؟', async () => {
+        const res = await api('auth&action=delete_account', { method: 'POST' });
+        if (res.success) { toast('تم حذف الحساب', 'success'); setTimeout(() => location.href = 'index.php', 1500); }
+        else toast(res.message, 'error');
+    }, 'نعم، احذف حسابي');
 }
-
-document.addEventListener('DOMContentLoaded', loadAvatar);
 </script>
-</body></html>
+<?php require __DIR__ . '/includes/footer.php'; ?>

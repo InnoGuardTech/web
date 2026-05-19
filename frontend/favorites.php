@@ -1,44 +1,29 @@
 <?php
-require_once __DIR__ . '/../config.php';
-if (!isset($_SESSION['user_id'])) { header('Location: auth.php'); exit; }
-define('PAGE_TITLE', 'المفضلة - ' . SITE_NAME);
-include __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../backend/config.php';
+if (function_exists('secureSession')) { secureSession(); } else { session_start(); }
+if (!isset($_SESSION['user_id'])) { header('Location: auth.php?return=favorites.php'); exit; }
+define('PAGE_TITLE', 'المفضلة | حراج اليمن');
+require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/icons.php';
 ?>
-<div class="container animate-fade-in">
-    <h2 style="margin-top:0; margin-bottom:1.5rem; color:var(--primary); font-weight:900;">❤️ إعلاناتي المفضلة</h2>
-    <div id="favs" class="ad-list"><div style="text-align:center; padding:3rem; color:var(--text-muted);">جاري التحميل...</div></div>
+<div style="margin-bottom:var(--sp-5);">
+    <h1 class="section-title">المفضلة</h1>
+    <p class="section-subtitle">الإعلانات التي حفظتها</p>
 </div>
-<script src="assets/js/app.js"></script>
+<div id="favsList" class="ads-grid"></div>
 <script>
-async function load() {
-    try {
-        const r = await apiRequest('ads&action=favorites');
-        const c = document.getElementById('favs');
-        if (!r.data.length) {
-            c.innerHTML = `<div style="text-align:center; padding:4rem; color:var(--text-muted);">
-                <div style="font-size:4rem; opacity:0.3;">💔</div>
-                <h3>لا توجد إعلانات في المفضلة بعد</h3>
-                <a href="index.php" class="btn-primary" style="margin-top:1rem;">تصفّح الإعلانات</a>
-            </div>`;
-            return;
-        }
-        c.innerHTML = r.data.map(a => `
-            <a href="ad.php?id=${a.id}${a.slug?'&slug='+encodeURIComponent(a.slug):''}" class="ad-row">
-                <div class="ad-row-main">
-                    <img class="ad-row-thumb" src="${a.image}" alt="" loading="lazy">
-                    <div class="ad-row-content">
-                        <h3 class="ad-row-title">${a.icon} ${escapeHtml(a.title)}</h3>
-                        <div class="ad-row-meta">
-                            <div class="ad-row-meta-item">📍 ${a.city}</div>
-                            <div class="ad-row-meta-item">⏱️ ${a.date}</div>
-                            <div class="ad-row-meta-item">📁 ${a.category}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="ad-row-side"><div class="ad-row-price">${a.price}</div></div>
-            </a>`).join('');
-    } catch(e) {}
+async function loadFavs() {
+    const list = document.getElementById('favsList');
+    list.innerHTML = skeletonGrid(4);
+    const res = await api('ads&action=favorites');
+    if (!res.success) { list.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><h3>تعذّر التحميل</h3></div>`; return; }
+    const ads = res.ads || res.data?.ads || res.data || [];
+    if (!ads.length) {
+        list.outerHTML = `<div class="empty-state surface-card" style="padding:60px 20px;"><div style="font-size:60px;opacity:.4;">❤️</div><h3>لا توجد عناصر في المفضلة</h3><p>اضغط على القلب في أي إعلان لإضافته هنا</p><a href="index.php" class="btn btn-primary" style="margin-top:14px;">تصفّح الإعلانات</a></div>`;
+        return;
+    }
+    list.innerHTML = ads.map(ad => { ad.is_favorite = true; return renderAdCard(ad); }).join('');
 }
-document.addEventListener('DOMContentLoaded', load);
+loadFavs();
 </script>
-</body></html>
+<?php require __DIR__ . '/includes/footer.php'; ?>

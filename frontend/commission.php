@@ -1,145 +1,56 @@
 <?php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../backend/config.php';
+if (function_exists('secureSession')) { secureSession(); } else { session_start(); }
 if (!isset($_SESSION['user_id'])) { header('Location: auth.php'); exit; }
-define('PAGE_TITLE', 'دفع العمولة - ' . SITE_NAME);
-include __DIR__ . '/includes/header.php';
+define('PAGE_TITLE', 'العمولة | حراج اليمن');
+require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/icons.php';
 ?>
-<style>
-.bank-card { background: rgba(13,148,136,0.05); border: 1px solid rgba(13,148,136,0.2); padding: 1.1rem; border-radius: var(--radius-lg); margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
-.bank-name { font-weight: 900; font-size: 1.05rem; color: var(--primary); }
-.bank-account { color: var(--secondary); font-size: 1.05rem; font-weight: 800; font-family: monospace; }
-.transfer-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-</style>
-
-<div class="container animate-fade-in" style="max-width:920px;">
-    <h2 style="margin:0 0 0.5rem; color:var(--primary); font-weight:900;">💰 عمولة الموقع 1%</h2>
-    <p style="color:var(--text-muted); margin-bottom:1.5rem;">عمولة الموقع هي 1% من قيمة السلعة المباعة. أرسلها على أحد البنوك أدناه ثم أرفق إثبات التحويل.</p>
-
-    <div class="premium-card" style="margin-bottom:1.5rem;">
-        <h3 style="margin:0 0 1rem; color:var(--primary); font-weight:900;">🏦 الحسابات البنكية</h3>
-
-        <div class="bank-card">
+<div style="max-width:760px;margin:0 auto;">
+    <div style="margin-bottom:var(--sp-5);">
+        <h1 class="section-title">العمولة وتأكيد البيع</h1>
+        <p class="section-subtitle">شفافية كاملة في رسوم المنصة</p>
+    </div>
+    <div class="surface-card" style="padding:var(--sp-6);margin-bottom:var(--sp-5);background:linear-gradient(135deg,rgba(193,154,62,.08),rgba(59,108,246,.05));">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gold-400),var(--gold-600));display:grid;place-items:center;color:#1c1606;"><?= icon('dollar', ['size'=>24]) ?></div>
             <div>
-                <div class="bank-name">🏦 بنك الكريمي الإسلامي</div>
-                <div class="bank-account">123456789</div>
+                <h3 style="font-size:18px;font-weight:800;">عمولة المنصة: 1% فقط</h3>
+                <p style="color:var(--text-soft);font-size:14px;">من قيمة كل عملية بيع تتم عبر المنصة</p>
             </div>
-            <button class="btn-outline btn-sm" onclick="copyToClipboard('123456789')">📋 نسخ</button>
         </div>
+        <p style="color:var(--text-soft);line-height:1.7;font-size:14px;">بعد إتمام البيع بنجاح، يُرجى تحويل قيمة العمولة (1% من سعر البيع) إلى الحساب البنكي المعتمد.</p>
+    </div>
 
-        <div class="bank-card">
-            <div>
-                <div class="bank-name">🏛️ بنك التضامن الإسلامي</div>
-                <div class="bank-account">000-111-2222</div>
-            </div>
-            <button class="btn-outline btn-sm" onclick="copyToClipboard('000-111-2222')">📋 نسخ</button>
-        </div>
-
-        <div class="bank-card">
-            <div>
-                <div class="bank-name">🏪 بنك القاسمي</div>
-                <div class="bank-account">555-666-7777</div>
-            </div>
-            <button class="btn-outline btn-sm" onclick="copyToClipboard('555-666-7777')">📋 نسخ</button>
+    <div class="surface-card" style="padding:var(--sp-6);margin-bottom:var(--sp-5);">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--sp-4);">معلومات التحويل البنكي</h3>
+        <div style="display:grid;gap:12px;">
+            <div style="display:flex;justify-content:space-between;padding:12px 16px;background:var(--bg-soft);border-radius:10px;"><span style="color:var(--muted);font-size:13px;">اسم البنك:</span><strong>بنك اليمن والكويت</strong></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 16px;background:var(--bg-soft);border-radius:10px;"><span style="color:var(--muted);font-size:13px;">اسم الحساب:</span><strong>حراج اليمن الفاخر</strong></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 16px;background:var(--bg-soft);border-radius:10px;"><span style="color:var(--muted);font-size:13px;">رقم الحساب:</span><code style="font-size:15px;font-weight:700;direction:ltr;">100-200-3001-4</code></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 16px;background:var(--bg-soft);border-radius:10px;"><span style="color:var(--muted);font-size:13px;">العملة:</span><strong>ريال يمني (YER)</strong></div>
         </div>
     </div>
 
-    <div class="premium-card" style="margin-bottom:1.5rem;">
-        <h3 style="margin:0 0 1rem; color:var(--primary); font-weight:900;">📋 إرسال إثبات تحويل</h3>
-
-        <form onsubmit="submitTransfer(event)">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>المبلغ (ر.ي) *</label>
-                    <input type="number" id="amount" required min="1" placeholder="مثال: 250000">
-                </div>
-                <div class="form-group">
-                    <label>تاريخ التحويل *</label>
-                    <input type="date" id="transfer-date" required max="<?= date('Y-m-d') ?>">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>اسم البنك *</label>
-                <select id="bank-name" required>
-                    <option value="">-- اختر --</option>
-                    <option>بنك الكريمي الإسلامي</option>
-                    <option>بنك التضامن الإسلامي</option>
-                    <option>بنك القاسمي</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>رقم الإعلان المرتبط (اختياري)</label>
-                <input type="number" id="ad-id" placeholder="مثال: 5">
-            </div>
-            <div class="form-group">
-                <label>ملاحظات (اختياري)</label>
-                <textarea id="notes" rows="2"></textarea>
-            </div>
-            <div class="form-group">
-                <label>📷 صورة إثبات التحويل *</label>
-                <input type="file" id="proof-file" accept="image/*" required>
-                <small style="color:var(--text-muted); font-size:0.78rem;">صورة سند التحويل من تطبيق البنك (JPG/PNG/PDF حتى 5MB)</small>
-            </div>
-            <button type="submit" class="btn-primary">📤 إرسال الإثبات</button>
+    <div class="surface-card" style="padding:var(--sp-6);">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--sp-4);">تأكيد تحويل العمولة</h3>
+        <form id="commissionForm">
+            <div class="field"><label class="field-label">رقم الإعلان المباع *</label><input type="number" class="input" name="ad_id" required></div>
+            <div class="field"><label class="field-label">سعر البيع (ر.ي) *</label><input type="number" class="input" name="sale_price" required></div>
+            <div class="field"><label class="field-label">مبلغ العمولة المحوّل (1%) *</label><input type="number" class="input" name="amount" required step="0.01"></div>
+            <div class="field"><label class="field-label">رقم/مرجع التحويل *</label><input type="text" class="input" name="reference" required></div>
+            <div class="field"><label class="field-label">ملاحظات (اختياري)</label><textarea class="textarea" name="notes" rows="3"></textarea></div>
+            <button type="submit" class="btn btn-primary btn-block btn-lg"><?= icon('check-circle', ['size'=>18]) ?> إرسال إثبات التحويل</button>
         </form>
     </div>
-
-    <div class="premium-card">
-        <h3 style="margin:0 0 1rem; color:var(--primary); font-weight:900;">📋 تحويلاتي السابقة</h3>
-        <div id="transfers-list"><div style="text-align:center; padding:2rem; color:var(--text-muted);">جاري التحميل...</div></div>
-    </div>
-
-    <div class="warning-card" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:var(--radius-md); padding:1rem; color:#92400E; margin-top:1.5rem; font-weight:700;">
-        ⚠️ بعد إرسال الإثبات، يرجى التواصل مع الإدارة على واتساب: <strong><?= htmlspecialchars(env('ADMIN_WHATSAPP', '777000000')) ?></strong>
-    </div>
 </div>
-
-<script src="assets/js/app.js"></script>
 <script>
-async function loadTransfers() {
-    try {
-        const r = await apiRequest('commission&action=my_transfers');
-        const list = document.getElementById('transfers-list');
-        if (!r.data.length) {
-            list.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);">لا توجد تحويلات سابقة</div>';
-            return;
-        }
-        list.innerHTML = r.data.map(t => `
-            <div class="transfer-card">
-                <div>
-                    <strong>${t.amount}</strong> · ${escapeHtml(t.bankName)} · ${escapeHtml(t.transferDate || '')}
-                    ${t.adTitle ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">إعلان: ${escapeHtml(t.adTitle)}</div>` : ''}
-                </div>
-                <div style="display:flex; gap:0.5rem; align-items:center;">
-                    <span class="status-badge status-${t.status}">${t.statusLabel}</span>
-                    ${t.proofImage ? `<a href="${t.proofImage}" target="_blank" class="btn-outline btn-sm">👁️ السند</a>` : ''}
-                </div>
-            </div>
-        `).join('');
-    } catch(e) {}
-}
-
-async function submitTransfer(e) {
+document.getElementById('commissionForm').onsubmit = async (e) => {
     e.preventDefault();
-    const file = document.getElementById('proof-file').files[0];
-    if (!file) return showToast('أرفق صورة الإثبات', 'warning');
-    if (file.size > 5*1024*1024) return showToast('حجم الصورة كبير', 'warning');
-
-    try {
-        const dataUrl = await resizeImage(file, 1400, 0.85);
-        await apiRequest('commission&action=submit', 'POST', {
-            amount: document.getElementById('amount').value,
-            bank_name: document.getElementById('bank-name').value,
-            transfer_date: document.getElementById('transfer-date').value,
-            ad_id: document.getElementById('ad-id').value || 0,
-            notes: document.getElementById('notes').value,
-            proof_image: dataUrl
-        });
-        showToast('✅ تم الإرسال بنجاح', 'success');
-        document.querySelector('form').reset();
-        loadTransfers();
-    } catch(e) {}
-}
-
-document.addEventListener('DOMContentLoaded', loadTransfers);
+    const data = Object.fromEntries(new FormData(e.target));
+    const res = await api('commission&action=submit', { method: 'POST', data });
+    if (res.success) { toast('تم استلام البيانات. سيتم المراجعة قريباً.', 'success'); e.target.reset(); }
+    else toast(res.message || 'حدث خطأ', 'error');
+};
 </script>
-</body></html>
+<?php require __DIR__ . '/includes/footer.php'; ?>

@@ -1,259 +1,248 @@
-# 🇾🇪 حراج اليمن الفاخر — الإصدار 2.0
+# 🏆 حراج اليمن الفاخر — v3.0
 
-> أكبر منصة للبيع والشراء في الجمهورية اليمنية، بنية معمارية احترافية ومُحدّثة بالكامل.
+> منصة الإعلانات المبوبة الأفخم في اليمن — تصميم حديث، أمان عالي، تجربة سلسة.
 
----
+## ✨ المزايا الجديدة في v3.0
 
-## ✨ الميزات الكاملة
+### 🎨 إعادة تصميم شاملة (Design System v3.0)
+- **نظام ألوان فاخر جديد**: أزرق ملكي (#3b6cf6) + ذهبي (#c19a3e) + خلفيات هادئة.
+- **خطوط احترافية**: Cairo + Tajawal بأوزان متعددة.
+- **مكتبة أيقونات SVG موحدة** (`includes/icons.php`) — 60+ أيقونة بنمط Lucide، بسيطة وأنيقة.
+- **تصميم Glassmorphism في الهيدر** مع backdrop-blur وشفافية ديناميكية.
+- **Skeleton loading + Toast notifications + Modal confirmations** سلسة.
+- **Mobile Bottom Nav** للتنقل السريع على الجوال.
+- **Dark Mode فاخر** بإحساس فضائي (#0b0f1a).
+- **Responsive Design** كامل من 320px إلى 4K.
 
-### 👤 المصادقة والحسابات
-- ✅ تسجيل دخول/تسجيل آمن مع **Rate Limiting**
-- ✅ **CSRF Protection** على جميع العمليات الحساسة
-- ✅ تأكيد رقم الجوال بواسطة **OTP**
-- ✅ نسيت كلمة المرور / **استعادة كلمة المرور**
-- ✅ تغيير كلمة المرور / تعديل الملف الشخصي
-- ✅ **حذف الحساب نهائياً (GDPR Compliant)**
-- ✅ صورة شخصية قابلة للتحميل (Avatar)
-- ✅ **Soft Delete** للمستخدمين والإعلانات
+### 🛒 إدارة الإعلانات الكاملة
+- ✅ **إنشاء، تعديل، حذف، عرض** الإعلانات
+- ✅ **Bump (رفع)** — إعادة نشر الإعلان مرة كل 24 ساعة
+- ✅ **Mark as Sold** — تعليم الإعلان كمبيع
+- ✅ **Archive / Reactivate** — أرشفة وإعادة تنشيط
+- ✅ **رفع متعدد للصور** (حتى 8 صور، 5MB/صورة) بـ Drag & Drop
 
-### 📋 الإعلانات
-- ✅ نشر إعلان مع رفع صور (حتى 8 صور) + ضغط جانب العميل
-- ✅ **تعديل الإعلان** بعد النشر
-- ✅ **أرشفة** الإعلان
-- ✅ تعليم كـ **"تم البيع"**
-- ✅ **Bump** (إعادة نشر/تجديد) — مرة كل 24 ساعة
-- ✅ **حذف الإعلان**
-- ✅ Pagination احترافي
-- ✅ **Sorting**: الأحدث / الأقدم / الأرخص / الأغلى / الأكثر مشاهدة
-- ✅ فلترة بالسعر (من-إلى)
-- ✅ فلترة بالسنة (للسيارات)
-- ✅ فلترة بالمدينة والقسم والماركة
-- ✅ **بحث FULLTEXT** متقدم
-- ✅ مواصفات ديناميكية حسب القسم (سيارات/عقارات)
-- ✅ **الموقع الجغرافي** + Geolocation API
-- ✅ معرض صور تفاعلي (Lightbox)
-- ✅ **عرض شبكي / قائمة** قابل للتبديل
+### 👤 إدارة الحساب
+- ✅ **تعديل الملف الشخصي** (الاسم، النبذة)
+- ✅ **تغيير كلمة المرور** (مع تأكيد القديمة)
+- ✅ **Forgot Password + OTP** عبر SMS (Development mode يعرض الرمز)
+- ✅ **توثيق الجوال** بـ OTP
+- ✅ **حذف الحساب** (Soft Delete مع GDPR)
 
-### 💬 الدردشة المتقدمة (Real-Time)
-- ✅ **Server-Sent Events (SSE)** للوقت الحقيقي ⚡
-- ✅ Polling Fallback تلقائي
-- ✅ **مؤشر الكتابة** (Typing Indicator) ⌨️
-- ✅ **حالة الاتصال** (Online / Away / Offline) 🟢
-- ✅ **إيصالات القراءة** (Read Receipts) ✓✓
-- ✅ إرسال صور ومرفقات 📷
-- ✅ **حذف رسالة**
-- ✅ حذف محادثة كاملة
-- ✅ بحث في المحادثات
-- ✅ Lightbox للصور
-- ✅ تصميم WhatsApp-style احترافي ومتجاوب
+### 🔍 بحث وتصفية متقدمة
+- ✅ Pagination (20 إعلان/صفحة)
+- ✅ Sorting: الأحدث، الأقدم، الأرخص، الأغلى، الأكثر مشاهدة
+- ✅ فلتر السعر (Min/Max)
+- ✅ فلتر سنة الصنع (للسيارات)
+- ✅ فلتر المدينة والفئة
+- ✅ Full-text search
+
+### 📱 المشاركة والموقع
+- ✅ أزرار مشاركة: WhatsApp, X (Twitter), Facebook, Telegram, نسخ الرابط
+- ✅ Open Graph + Twitter Card tags
+- ✅ QR Code تلقائي لكل إعلان
+- ✅ Schema.org JSON-LD (Product markup)
+
+### 💬 محادثات حية
+- ✅ قائمة محادثات + بحث
+- ✅ إرسال نصوص وصور (5MB max)
+- ✅ Read receipts (✓✓)
+- ✅ Polling كل 3 ثوانٍ (3s SSE-like)
+- ✅ Online/Offline status
 
 ### 🔔 الإشعارات
-- ✅ إشعارات داخل التطبيق (Comments / Messages / Offers / Reports)
-- ✅ Badge counter حي
-- ✅ تعليم كمقروء / حذف
-- ✅ بنية تحتية لإشعارات Email / SMS (قابلة للتفعيل)
+- ✅ نظام إشعارات داخلي (in-app)
+- ✅ عداد غير المقروء في الهيدر
+- ✅ Mark all as read
 
-### 🚩 البلاغات
-- ✅ **زر بلاغ** في كل إعلان
-- ✅ 7 أنواع بلاغات + تفاصيل مخصصة
-- ✅ Rate Limiting (5 بلاغات/ساعة)
-- ✅ منع البلاغ المكرر
-- ✅ لوحة إدارة البلاغات
+### 🛡️ الأمان
+- ✅ **CSRF Protection** على جميع POST endpoints
+- ✅ **Rate Limiting** (5 محاولات/5 دقائق للـ login)
+- ✅ **Session Hardening**: HttpOnly, Secure, SameSite=Lax, regenerate periodically
+- ✅ **Password Hashing**: `password_hash` + `password_verify`
+- ✅ **SQL Injection Prevention**: PDO Prepared Statements
+- ✅ **XSS Protection**: `htmlspecialchars` everywhere
+- ✅ **حذف `quick_switch` و `demo_users` endpoints الخطرين**
+- ✅ **.env** خارج Git tracking مع `.env.example`
 
-### 💰 العمولات
-- ✅ نموذج إرسال إثبات التحويل
-- ✅ ربط بالإعلان (اختياري)
-- ✅ معرض البنوك المعتمدة
-- ✅ تتبع الحالة (قيد المراجعة / مقبول / مرفوض)
-- ✅ معالجة في لوحة الإدارة
-
-### 📤 المشاركة الاجتماعية
-- ✅ مشاركة عبر: **WhatsApp / Twitter (X) / Facebook / Telegram**
-- ✅ نسخ الرابط
-- ✅ **رمز QR** لكل إعلان
-- ✅ **Open Graph Tags** للمشاركة الجميلة
-- ✅ **Twitter Card** meta tags
-
-### 🗺️ الخرائط
-- ✅ إضافة موقع للإعلان (Geolocation)
-- ✅ خريطة OpenStreetMap مدمجة (مجانية، بدون API key)
-- ✅ فتح في الخريطة الكاملة
-
-### 🔍 SEO
-- ✅ **Schema.org Product Markup** للإعلانات
-- ✅ Meta Description / Keywords ديناميكية
-- ✅ **Sitemap.xml** ديناميكية
-- ✅ **robots.txt**
-- ✅ روابط SEO-friendly (مع slug عربي)
-- ✅ Canonical URLs
-- ✅ Favicon SVG
-
-### 🛡️ لوحة الإدارة
-- ✅ إحصائيات حية (مستخدمون / إعلانات / بلاغات / عمولات)
-- ✅ إدارة المستخدمين (حظر / رفع حظر / تغيير الدور)
-- ✅ إدارة الإعلانات (حذف / تثبيت)
+### 📊 لوحة الإدارة الشاملة
+- ✅ إحصاءات مباشرة: المستخدمون، الإعلانات، البلاغات، العمولات، الرسائل
+- ✅ إدارة المستخدمين (حظر/فك حظر/بحث)
+- ✅ إدارة الإعلانات (عرض/حذف)
 - ✅ معالجة البلاغات
-- ✅ مراجعة تحويلات العمولات (قبول / رفض)
+- ✅ مراجعة العمولات
 
-### 🎨 التصميم والتجربة
-- ✅ **Glassmorphism Header** بألوان فاخرة
-- ✅ **Dark Mode** كامل
-- ✅ تصميم **متجاوب 100%** على جميع الشاشات
-- ✅ Skeleton Loading
-- ✅ Toast Notifications
-- ✅ Modal Confirmations
-- ✅ Lightbox للصور
-- ✅ Animations سلسة
-- ✅ خط Cairo العربي
-- ✅ Sidebar drawer للموبايل (بدلاً من إخفائه)
+### 🔎 SEO
+- ✅ Meta description / keywords / OG / Twitter tags
+- ✅ Schema.org Product JSON-LD
+- ✅ `sitemap.php` ديناميكي
+- ✅ `robots.txt`
+- ✅ SEO-friendly URLs مع Arabic slugs
 
 ---
 
-## 🏗️ البنية المعمارية
+## 🛠️ التقنيات
+
+- **Backend**: PHP 8.4, MySQL/MariaDB, PDO
+- **Frontend**: Vanilla JS (ES2020), CSS Custom Properties, RTL
+- **Database**: 16 جدول مع Foreign Keys و Full-text indexes
+- **Architecture**: API REST + Session Auth + CSRF
+
+## 📁 هيكل المشروع
 
 ```
 haraj-yemen/
-├── .env                       # متغيرات البيئة (سرية)
-├── .env.example               # نموذج .env
-├── .gitignore                 # ✅ PHP-specific
-├── .htaccess                  # Apache config + Security
-├── config.php                 # الإعدادات الرئيسية
-├── robots.txt                 # SEO
-├── index.php                  # Redirect إلى frontend/
-│
-├── backend/                   # طبقة API
-│   ├── lib/
-│   │   ├── env.php           # .env loader
-│   │   ├── security.php      # CSRF, Rate Limit, OTP, Sanitize
-│   │   ├── upload.php        # رفع الصور (ملفات حقيقية)
-│   │   └── mailer.php        # SMTP/SMS abstraction
-│   ├── config.php            # CORS + JSON helpers
-│   ├── router.php            # موجه API
-│   ├── auth.php              # المصادقة + OTP
-│   ├── ads.php               # الإعلانات الكاملة
-│   ├── chat.php              # الدردشة + SSE
-│   ├── notifications.php     # الإشعارات
-│   ├── reports.php           # البلاغات
-│   ├── commission.php        # العمولات
-│   ├── user.php              # بروفايل المستخدم
-│   ├── admin.php             # لوحة الإدارة
-│   ├── presence.php          # الحضور الحي
-│   ├── categories.php
-│   ├── cities.php
-│   └── csrf.php
-│
-├── frontend/                  # طبقة العرض
-│   ├── assets/
-│   │   ├── css/
-│   │   │   ├── style.css     # نظام التصميم
-│   │   │   └── chat.css      # دردشة احترافية
-│   │   ├── js/
-│   │   │   └── app.js        # Core utilities
-│   │   └── img/
-│   ├── includes/
-│   │   └── header.php        # Header مشترك
-│   ├── index.php             # الصفحة الرئيسية
-│   ├── ad.php                # تفاصيل الإعلان (Schema.org)
-│   ├── auth.php              # دخول/تسجيل/استعادة
-│   ├── post.php              # إضافة/تعديل إعلان
-│   ├── my_ads.php            # إعلاناتي
-│   ├── favorites.php         # المفضلة
-│   ├── messages.php          # الدردشة Real-Time
+├── backend/
+│   ├── lib/                # security, env, upload, mailer
+│   ├── ads.php             # CRUD + bump + sold + archive
+│   ├── auth.php            # login + register + OTP + forgot
+│   ├── chat.php            # threads + messages + images
+│   ├── admin.php           # stats + users + reports
+│   ├── user.php            # profile + update_profile + reviews
 │   ├── notifications.php
-│   ├── user.php              # بروفايل
-│   ├── settings.php          # إعدادات الحساب
-│   ├── commission.php        # دفع العمولة
-│   ├── admin.php             # لوحة التحكم
-│   └── sitemap.php           # SEO sitemap
-│
-├── uploads/                  # ملفات المستخدمين (ignored from git)
-│   ├── ads/
-│   ├── avatars/
-│   ├── chat/
-│   └── commission/
-│
-├── scripts/
-│   └── db_setup.php          # إعداد قاعدة البيانات
-│
-└── cache/                    # Rate limiting + Logs
+│   ├── reports.php
+│   ├── commission.php
+│   ├── csrf.php
+│   ├── presence.php
+│   ├── categories.php / cities.php
+│   ├── config.php          # API helpers
+│   └── router.php          # API router
+├── frontend/
+│   ├── assets/css/style.css   # Premium Design System v3.0
+│   ├── assets/js/app.js       # Core JS (API, toast, CSRF, helpers)
+│   ├── includes/
+│   │   ├── header.php          # Unified header with sticky nav
+│   │   ├── footer.php          # Footer + mobile bottom nav
+│   │   └── icons.php           # SVG icon library (60+ icons)
+│   ├── index.php           # Homepage with hero + filters + grid
+│   ├── auth.php            # Login + Register + Forgot
+│   ├── ad.php              # Ad detail + gallery + share + chat
+│   ├── post.php            # Create/Edit ad (8 image upload)
+│   ├── my_ads.php          # Owner's ad management
+│   ├── settings.php        # 4 tabs: profile/password/verify/danger
+│   ├── messages.php        # Chat UI with sidebar + body
+│   ├── notifications.php   # Notification list
+│   ├── favorites.php       # Favorites grid
+│   ├── user.php            # Public profile + stats + ads
+│   ├── admin.php           # Admin dashboard (6 views)
+│   ├── commission.php      # Commission info + proof form
+│   └── sitemap.php         # Dynamic XML sitemap
+├── scripts/db_setup.php
+├── .env / .env.example
+├── .htaccess
+└── README.md
 ```
 
----
+## 🚀 التشغيل المحلي
 
-## 🚀 التشغيل
-
-### المتطلبات
-- PHP 8.0+
-- MySQL 5.7+ أو MariaDB 10.5+
-- (اختياري) Apache مع mod_rewrite للـ .htaccess
-
-### خطوات التثبيت
 ```bash
-# 1. استنسخ المشروع
-git clone https://github.com/InnoGuardTech/web.git haraj-yemen
+# 1. Clone
+git clone https://github.com/InnoGuardTech/web.git
+cd web
 
-# 2. أنشئ ملف .env
+# 2. Setup environment
 cp .env.example .env
-nano .env  # عدّل بيانات قاعدة البيانات
+# Edit .env with your DB credentials
 
-# 3. أنشئ قاعدة البيانات
-php scripts/db_setup.php --fresh
+# 3. Install MariaDB and create DB
+sudo mysql -e "CREATE DATABASE haraj_db CHARACTER SET utf8mb4;
+CREATE USER 'haraj_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL ON haraj_db.* TO 'haraj_user'@'localhost'; FLUSH PRIVILEGES;"
 
-# 4. شغّل خادم التطوير
+# 4. Initialize DB schema + demo data
+php scripts/db_setup.php
+
+# 5. Start dev server
 php -S localhost:8000 -t .
+
+# 6. Open in browser
+# http://localhost:8000/frontend/index.php
 ```
 
-### حسابات تجريبية
-| الحساب | الجوال | كلمة المرور |
-|---|---|---|
-| 🛡️ مدير | `777111111` | `Admin@123` |
-| 👤 مستخدم | `777222222` | `User@123` |
+## 🧪 حسابات تجريبية
 
----
+| الدور | الجوال | كلمة المرور |
+|------|--------|-------------|
+| 👑 Admin | 777111111 | Admin@123 |
+| 🏪 Seller | 777222222 | User@123 |
+| 🏪 Seller | 777333333 | User@123 |
+| 🛒 Buyer | 777444444 | User@123 |
 
-## 🔐 الأمان
+## 📋 جدول الـ Endpoints
 
-### ما تم إصلاحه من الإصدار القديم:
-- ❌ **حذف** `quick_switch` endpoint (الذي يسمح بالتحول لأي مستخدم)
-- ❌ **حذف** `demo_users` endpoint (الذي يكشف بيانات المستخدمين)
-- ✅ نقل بيانات DB إلى **`.env`**
-- ✅ إصلاح **`.gitignore`** ليناسب PHP
-- ✅ إضافة **CSRF Tokens** على جميع POST endpoints
-- ✅ إضافة **Rate Limiting**
-- ✅ **HttpOnly + SameSite Cookies**
-- ✅ **CORS مقيّد** بدلاً من *
-- ✅ **Password Strength Validation**
-- ✅ **Phone Validation** (يمنية صحيحة)
-- ✅ Session Regeneration
-- ✅ **Blacklist** للأرقام/الإيميلات
-- ✅ Soft Delete بدلاً من DELETE نهائي
-- ✅ XSS Protection (htmlspecialchars + sanitize)
-- ✅ SQL Injection Protection (PDO Prepared Statements)
-- ✅ Upload Validation (MIME type + size + extension)
+```
+GET  /backend/router.php?route=csrf                    # Get CSRF token
+POST /backend/router.php?route=auth&action=login       # Login
+POST /backend/router.php?route=auth&action=register    # Register
+POST /backend/router.php?route=auth&action=forgot_password
+POST /backend/router.php?route=auth&action=reset_password
+POST /backend/router.php?route=auth&action=send_otp
+POST /backend/router.php?route=auth&action=verify_otp
+POST /backend/router.php?route=auth&action=change_password
+POST /backend/router.php?route=auth&action=delete_account
+POST /backend/router.php?route=auth&action=logout
 
----
+GET  /backend/router.php?route=ads&action=list          # +filters
+GET  /backend/router.php?route=ads&action=my_ads
+GET  /backend/router.php?route=ads&action=favorites
+POST /backend/router.php?route=ads&action=create
+POST /backend/router.php?route=ads&action=update
+POST /backend/router.php?route=ads&action=delete
+POST /backend/router.php?route=ads&action=bump
+POST /backend/router.php?route=ads&action=mark_sold
+POST /backend/router.php?route=ads&action=archive
+POST /backend/router.php?route=ads&action=reactivate
+POST /backend/router.php?route=ads&action=toggle_favorite
+POST /backend/router.php?route=ads&action=add_comment
 
-## 📊 قاعدة البيانات (15 جدول)
+GET  /backend/router.php?route=chat&action=threads
+GET  /backend/router.php?route=chat&action=messages
+POST /backend/router.php?route=chat&action=send
+POST /backend/router.php?route=chat&action=send_image
 
-`users, ads, comments, favorites, chat_threads, messages, typing_status, user_presence, notifications, reviews, reports, commission_transfers, blacklist, otp_codes, password_resets, ad_view_stats`
+GET  /backend/router.php?route=user&action=profile&id={id}
+POST /backend/router.php?route=user&action=update_profile
 
-مع **Indexes** على الحقول المُستعلَم عنها بكثرة، و**FULLTEXT** للبحث.
+GET  /backend/router.php?route=notifications&action=list
+POST /backend/router.php?route=notifications&action=mark_all_read
 
----
+POST /backend/router.php?route=reports&action=create
 
-## 🎨 التقنيات
+GET  /backend/router.php?route=admin&action=stats
+GET  /backend/router.php?route=admin&action=users
+GET  /backend/router.php?route=admin&action=ads
+GET  /backend/router.php?route=admin&action=reports
+GET  /backend/router.php?route=admin&action=commissions
+POST /backend/router.php?route=admin&action=ban_user
+POST /backend/router.php?route=admin&action=unban_user
+POST /backend/router.php?route=admin&action=delete_ad
+POST /backend/router.php?route=admin&action=resolve_report
+POST /backend/router.php?route=admin&action=approve_commission
 
-| الطبقة | التقنية |
-|---|---|
-| Backend | PHP 8 (Pure, no framework) + PDO MySQL |
-| Frontend | Vanilla JS (no framework) + CSS3 Custom |
-| Real-Time | Server-Sent Events (SSE) |
-| Database | MySQL / MariaDB |
-| Security | CSRF, Rate Limit, OTP, Soft Delete |
-| SEO | Schema.org, Open Graph, Sitemap |
+GET  /backend/router.php?route=categories&action=list
+GET  /backend/router.php?route=cities&action=list
 
----
+POST /backend/router.php?route=commission&action=submit
+```
+
+## 🔐 ملاحظات الإنتاج
+
+قبل النشر للإنتاج:
+
+1. **غيّر `.env`**:
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - استخدم بيانات قاعدة بيانات قوية
+2. **فعّل HTTPS** وضع `COOKIE_SECURE=true`
+3. **استخدم PHPMailer/SMTP حقيقي** بدلاً من log
+4. **استخدم Twilio/Vonage** لإرسال SMS الفعلي
+5. **فعّل Web Push** بمفاتيح VAPID
+6. **اضبط Apache/Nginx** لاستخدام `.htaccess` المرفق
+7. **اعمل Backups دورية** لقاعدة البيانات
 
 ## 📝 الترخيص
 
-جميع الحقوق محفوظة © 2026 InnoGuardTech
+© 2026 InnoGuardTech — جميع الحقوق محفوظة.
+
+---
+
+**Built with ❤️ for Yemen 🇾🇪**

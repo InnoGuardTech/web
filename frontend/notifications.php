@@ -1,87 +1,43 @@
 <?php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../backend/config.php';
+if (function_exists('secureSession')) { secureSession(); } else { session_start(); }
 if (!isset($_SESSION['user_id'])) { header('Location: auth.php'); exit; }
-define('PAGE_TITLE', 'الإشعارات - ' . SITE_NAME);
-include __DIR__ . '/includes/header.php';
+define('PAGE_TITLE', 'الإشعارات | حراج اليمن');
+require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/icons.php';
 ?>
-<style>
-.notif-item { display: flex; gap: 0.85rem; padding: 1rem; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: var(--transition); }
-.notif-item:hover { background: var(--hover-bg); }
-.notif-item.unread { background: var(--primary-light); }
-.notif-icon { width: 42px; height: 42px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
-.notif-content { flex: 1; min-width: 0; }
-.notif-title { font-weight: 800; margin-bottom: 4px; }
-.notif-text { font-size: 0.88rem; color: var(--text-muted); }
-.notif-time { font-size: 0.72rem; color: var(--text-light); margin-top: 4px; }
-</style>
-
-<div class="container animate-fade-in" style="max-width:780px;">
-    <div class="flex items-center justify-between" style="margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-        <h2 style="margin:0; color:var(--primary); font-weight:900;">🔔 الإشعارات</h2>
-        <div style="display:flex; gap:0.4rem;">
-            <button class="btn-outline btn-sm" onclick="markAllRead()">✓ تعليم الكل كمقروء</button>
-            <button class="btn-outline btn-sm" onclick="clearAll()" style="color:var(--danger); border-color:var(--danger);">🗑️ مسح المقروءة</button>
-        </div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-5);flex-wrap:wrap;gap:10px;">
+    <div>
+        <h1 class="section-title">الإشعارات</h1>
+        <p class="section-subtitle">آخر الأنشطة المتعلقة بحسابك</p>
     </div>
-    <div class="premium-card" style="padding:0; overflow:hidden;" id="list">
-        <div style="text-align:center; padding:3rem; color:var(--text-muted);">جاري التحميل...</div>
-    </div>
+    <button class="btn btn-secondary btn-sm" onclick="markAllRead()"><?= icon('check', ['size'=>16]) ?> تعليم الكل كمقروء</button>
 </div>
-
-<script src="assets/js/app.js"></script>
+<div id="notifList" class="surface-card" style="padding:8px;">
+    <div class="skeleton" style="height:60px;margin:8px;border-radius:8px;"></div>
+    <div class="skeleton" style="height:60px;margin:8px;border-radius:8px;"></div>
+</div>
 <script>
-async function load() {
-    try {
-        const r = await apiRequest('notifications&action=list');
-        const list = document.getElementById('list');
-        if (!r.data.length) {
-            list.innerHTML = '<div style="text-align:center; padding:4rem; color:var(--text-muted);"><div style="font-size:3rem; opacity:0.3;">🔕</div><h3>لا توجد إشعارات</h3></div>';
-            return;
-        }
-        list.innerHTML = r.data.map(n => `
-            <div class="notif-item ${!n.isRead ? 'unread' : ''}" onclick="${n.link ? `markRead(${n.id}, '${n.link}')` : `markRead(${n.id})`}">
-                <div class="notif-icon">${n.icon}</div>
-                <div class="notif-content">
-                    <div class="notif-title">${escapeHtml(n.title)}</div>
-                    <div class="notif-text">${escapeHtml(n.content)}</div>
-                    <div class="notif-time">${n.date}</div>
-                </div>
-                <button onclick="event.stopPropagation(); delNotif(${n.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1rem;">🗑️</button>
+async function loadNotifs() {
+    const res = await api('notifications&action=list');
+    const list = document.getElementById('notifList');
+    const items = res.notifications || res.data?.notifications || res.data || [];
+    if (!items.length) { list.innerHTML = `<div class="empty-state" style="padding:50px 20px;"><div style="font-size:50px;opacity:.4;">🔔</div><h3>لا توجد إشعارات</h3></div>`; return; }
+    list.innerHTML = items.map(n => {
+        const read = n.isRead || n.is_read;
+        return `<a href="${n.link || '#'}" style="display:block;padding:14px 16px;border-radius:10px;background:${read==0?'rgba(59,108,246,.05)':'transparent'};margin:4px 0;border-inline-start:3px solid ${read==0?'var(--brand-500)':'transparent'};">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <strong style="font-size:14px;">${escapeHtml(n.title || '')}</strong>
+                <span style="font-size:11px;color:var(--muted);">${fmtDate(n.created_at || n.createdAt)}</span>
             </div>
-        `).join('');
-    } catch(e) {}
+            <p style="font-size:13px;color:var(--text-soft);margin-top:4px;">${escapeHtml(n.content || n.body || n.message || '')}</p>
+        </a>`;
+    }).join('');
 }
-
-async function markRead(id, link) {
-    try { await apiRequest('notifications&action=mark_read', 'POST', { id }); } catch(e) {}
-    if (link) window.location.href = link;
-    else load();
-}
-
 async function markAllRead() {
-    try {
-        await apiRequest('notifications&action=mark_all_read', 'POST', {});
-        showToast('تم تعليم الكل كمقروء', 'success');
-        load();
-    } catch(e) {}
+    const res = await api('notifications&action=mark_all_read', { method: 'POST' });
+    if (res.success) { toast('تم وضع علامة مقروء', 'success'); loadNotifs(); }
 }
-
-async function delNotif(id) {
-    try {
-        await apiRequest('notifications&action=delete', 'POST', { id });
-        load();
-    } catch(e) {}
-}
-
-async function clearAll() {
-    if (!await confirmModal('سيتم حذف جميع الإشعارات المقروءة. هل أنت متأكد؟', 'مسح')) return;
-    try {
-        await apiRequest('notifications&action=clear_all', 'POST', {});
-        showToast('تم المسح', 'success');
-        load();
-    } catch(e) {}
-}
-
-document.addEventListener('DOMContentLoaded', load);
+loadNotifs();
 </script>
-</body></html>
+<?php require __DIR__ . '/includes/footer.php'; ?>

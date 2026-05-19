@@ -1,45 +1,38 @@
-# ====== Environment & Secrets ======
-.env
-.env.local
-.env.production
-*.key
-*.pem
-config.local.php
 
-# ====== Uploads (User content) ======
-uploads/ads/*
-uploads/avatars/*
-uploads/chat/*
-uploads/commission/*
 !uploads/ads/.gitkeep
 !uploads/avatars/.gitkeep
 !uploads/chat/.gitkeep
 !uploads/commission/.gitkeep
-
-# ====== PHP / Composer ======
-/vendor/
-composer.lock
-*.log
-error_log
-
+# ====== Cache / Temp ======
+# ====== Database dumps ======
+# ====== Environment & Secrets ======
 # ====== IDE / Editor ======
+# ====== OS ======
+# ====== PHP / Composer ======
+# ====== Uploads (User content) ======
+*.dump
+*.key
+*.log
+*.pem
+*.sql.bak
+*.swo
+*.swp
+*.tmp
+.DS_Store
+.env
+.env.local
+.env.production
 .idea/
 .vscode/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-
-# ====== Cache / Temp ======
 /cache/
 /tmp/
-*.tmp
-
-# ====== Database dumps ======
-*.sql.bak
-*.dump
-
-# ====== OS ======
-.DS_Store
+/vendor/
 Thumbs.db
+composer.lock
+config.local.php
 desktop.ini
+error_log
+uploads/ads/*
+uploads/avatars/*
+uploads/chat/*
+uploads/commission/*

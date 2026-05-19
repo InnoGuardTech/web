@@ -118,6 +118,19 @@ if ($method === 'POST') {
 
         jsonSuccess([], 'تم إضافة تقييمك');
     }
+    // ---- تحديث الملف الشخصي ----
+    if ($action === 'update_profile') {
+        requireAuth();
+        requireCsrf();
+        $name = trim($input['name'] ?? '');
+        $bio  = trim($input['bio'] ?? '');
+        if (mb_strlen($name) < 3 || mb_strlen($name) > 60) jsonError('الاسم في نطاق 3-60 حرف');
+        if (mb_strlen($bio) > 300) jsonError('النبذة طويلة جداً');
+        $db->prepare("UPDATE users SET name = ?, bio = ? WHERE id = ?")
+           ->execute([$name, $bio, $_SESSION['user_id']]);
+        $_SESSION['user_name'] = $name;
+        jsonSuccess([], 'تم تحديث الملف بنجاح ✓');
+    }
 }
 
 jsonError('طلب غير صالح');

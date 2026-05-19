@@ -214,7 +214,7 @@ if ($method === 'GET') {
 
     // ---- القائمة الرئيسية مع كل الفلاتر ----
     if ($action === '' || $action === 'list' || empty($action)) {
-        $cat       = $_GET['cat'] ?? 'all';
+        $cat       = $_GET['category'] ?? $_GET['cat'] ?? 'all';
         $city      = $_GET['city'] ?? 'الكل';
         $brand     = $_GET['brand'] ?? '';
         $q         = trim($_GET['q'] ?? '');
@@ -223,6 +223,9 @@ if ($method === 'GET') {
         $minYear   = (int)($_GET['min_year'] ?? 0);
         $maxYear   = (int)($_GET['max_year'] ?? 0);
         $sort      = $_GET['sort'] ?? 'newest';
+        // Sort aliasing: latest=newest, expensive=price_desc, cheapest=price_asc, popular=views
+        $sortMap = ['latest'=>'newest','newest'=>'newest','oldest'=>'oldest','cheapest'=>'price_asc','expensive'=>'price_desc','popular'=>'views'];
+        $sort = $sortMap[$sort] ?? $sort;
         $page      = max(1, (int)($_GET['page'] ?? 1));
         $perPage   = min(50, max(5, (int)($_GET['per_page'] ?? 20)));
         $offset    = ($page - 1) * $perPage;
@@ -336,7 +339,7 @@ if ($method === 'POST') {
     if ($action === 'add_comment') {
         requireAuth();
         requireCsrf();
-        $adId = (int)($input['ad_id'] ?? 0);
+        $adId = (int)($input['id'] ?? $input['ad_id'] ?? $input['adId'] ?? 0);
         $content = sanitize($input['content'] ?? '');
         $type = $input['type'] ?? 'comment';
         $offerAmount = isset($input['offer_amount']) ? (float)$input['offer_amount'] : null;
@@ -370,7 +373,7 @@ if ($method === 'POST') {
     if ($action === 'toggle_favorite') {
         requireAuth();
         requireCsrf();
-        $adId = (int)($input['ad_id'] ?? 0);
+        $adId = (int)($input['id'] ?? $input['ad_id'] ?? $input['adId'] ?? 0);
         if ($adId <= 0) jsonError('معرّف غير صالح');
 
         $check = $db->prepare("SELECT id FROM favorites WHERE userId = ? AND adId = ?");
@@ -473,7 +476,7 @@ if ($method === 'POST') {
     if ($action === 'update') {
         requireAuth();
         requireCsrf();
-        $adId = (int)($input['id'] ?? 0);
+        $adId = (int)($input['id'] ?? $input['ad_id'] ?? $input['adId'] ?? 0);
 
         $check = $db->prepare("SELECT userId, images, status FROM ads WHERE id = ?");
         $check->execute([$adId]);
@@ -539,10 +542,16 @@ if ($method === 'POST') {
     }
 
     // ---- تغيير حالة الإعلان (sold/archived/active) ----
+    // aliasing: mark_sold / archive / reactivate
+    if (in_array($action, ['mark_sold','archive','reactivate'], true)) {
+        $statusMap = ['mark_sold' => 'sold', 'archive' => 'archived', 'reactivate' => 'active'];
+        $input['status'] = $statusMap[$action];
+        $action = 'change_status';
+    }
     if ($action === 'change_status') {
         requireAuth();
         requireCsrf();
-        $adId = (int)($input['id'] ?? 0);
+        $adId = (int)($input['id'] ?? $input['ad_id'] ?? $input['adId'] ?? 0);
         $newStatus = $input['status'] ?? '';
         $allowed = ['active','sold','archived'];
         if (!in_array($newStatus, $allowed)) jsonError('حالة غير صالحة');
@@ -566,7 +575,7 @@ if ($method === 'POST') {
     if ($action === 'bump') {
         requireAuth();
         requireCsrf();
-        $adId = (int)($input['id'] ?? 0);
+        $adId = (int)($input['id'] ?? $input['ad_id'] ?? $input['adId'] ?? 0);
         $check = $db->prepare("SELECT userId, bumpedAt FROM ads WHERE id = ?");
         $check->execute([$adId]);
         $ad = $check->fetch();
@@ -586,7 +595,7 @@ if ($method === 'POST') {
     if ($action === 'delete') {
         requireAuth();
         requireCsrf();
-        $adId = (int)($input['id'] ?? 0);
+        $adId = (int)($input['id'] ?? $input['ad_id'] ?? $input['adId'] ?? 0);
 
         $check = $db->prepare("SELECT userId, images FROM ads WHERE id = ?");
         $check->execute([$adId]);
