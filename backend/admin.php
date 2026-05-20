@@ -15,31 +15,31 @@ $action = $_GET['action'] ?? $input['action'] ?? '';
 if ($method === 'GET') {
     if ($action === 'stats') {
         $stats = [
-            'users'       => (int)$db->query("SELECT COUNT(*) FROM users WHERE deletedAt IS NULL")->fetchColumn(),
-            'ads'         => (int)$db->query("SELECT COUNT(*) FROM ads WHERE status != 'deleted'")->fetchColumn(),
-            'activeAds'   => (int)$db->query("SELECT COUNT(*) FROM ads WHERE status = 'active'")->fetchColumn(),
-            'soldAds'     => (int)$db->query("SELECT COUNT(*) FROM ads WHERE status = 'sold'")->fetchColumn(),
-            'pendingReports' => (int)$db->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn(),
-            'totalComments' => (int)$db->query("SELECT COUNT(*) FROM comments")->fetchColumn(),
-            'totalMessages' => (int)$db->query("SELECT COUNT(*) FROM messages")->fetchColumn(),
-            'commissions' => (float)($db->query("SELECT COALESCE(SUM(amount),0) FROM commission_transfers WHERE status = 'approved'")->fetchColumn()),
+            'totalUsers'       => (int)$db->query("SELECT COUNT(*) FROM users WHERE deletedAt IS NULL")->fetchColumn(),
+            'totalAds'         => (int)$db->query("SELECT COUNT(*) FROM ads WHERE status != 'deleted'")->fetchColumn(),
+            'activeAds'        => (int)$db->query("SELECT COUNT(*) FROM ads WHERE status = 'active'")->fetchColumn(),
+            'soldAds'          => (int)$db->query("SELECT COUNT(*) FROM ads WHERE status = 'sold'")->fetchColumn(),
+            'pendingReports'   => (int)$db->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn(),
+            'totalComments'    => (int)$db->query("SELECT COUNT(*) FROM comments")->fetchColumn(),
+            'totalMessages'    => (int)$db->query("SELECT COUNT(*) FROM messages")->fetchColumn(),
+            'totalCommissions' => (float)($db->query("SELECT COALESCE(SUM(amount),0) FROM commission_transfers WHERE status = 'approved'")->fetchColumn()),
             'pendingCommissions' => (int)$db->query("SELECT COUNT(*) FROM commission_transfers WHERE status = 'pending'")->fetchColumn(),
-            'newUsersToday' => (int)$db->query("SELECT COUNT(*) FROM users WHERE DATE(createdAt) = CURDATE()")->fetchColumn(),
-            'newAdsToday' => (int)$db->query("SELECT COUNT(*) FROM ads WHERE DATE(createdAt) = CURDATE() AND status != 'deleted'")->fetchColumn(),
+            'newUsersToday'    => (int)$db->query("SELECT COUNT(*) FROM users WHERE date(createdAt) = date('now')")->fetchColumn(),
+            'newAdsToday'      => (int)$db->query("SELECT COUNT(*) FROM ads WHERE date(createdAt) = date('now') AND status != 'removed'")->fetchColumn(),
         ];
         // إحصائيات آخر 7 أيام
-        $weeklyStmt = $db->query("SELECT DATE(createdAt) AS day, COUNT(*) AS c FROM ads WHERE createdAt > DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY day ORDER BY day");
+        $weeklyStmt = $db->query("SELECT date(createdAt) AS day, COUNT(*) AS c FROM ads WHERE createdAt > date('now', '-7 days') GROUP BY day ORDER BY day");
         $stats['weeklyAds'] = $weeklyStmt->fetchAll();
         jsonSuccess($stats);
     }
 
-    if ($action === 'users') {
+    if ($action === 'users' || $action === 'list_users') {
         $search = trim($_GET['q'] ?? '');
         $page = max(1, (int)($_GET['page'] ?? 1));
         $perPage = 30;
         $offset = ($page - 1) * $perPage;
 
-        $where = "deletedAt IS NULL";
+        $where = "1=1";
         $params = [];
         if (!empty($search)) {
             $where .= " AND (name LIKE ? OR phone LIKE ? OR email LIKE ?)";
@@ -56,13 +56,13 @@ if ($method === 'GET') {
         jsonSuccess(['users' => $stmt->fetchAll(), 'total' => $total, 'page' => $page, 'per_page' => $perPage]);
     }
 
-    if ($action === 'ads') {
+    if ($action === 'ads' || $action === 'list_ads') {
         $status = $_GET['status'] ?? 'all';
         $page = max(1, (int)($_GET['page'] ?? 1));
         $perPage = 30;
         $offset = ($page - 1) * $perPage;
 
-        $where = "a.status != 'deleted'";
+        $where = "a.status != 'removed'";
         $params = [];
         if ($status !== 'all') {
             $where .= " AND a.status = ?";

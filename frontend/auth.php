@@ -83,7 +83,7 @@ document.getElementById('loginForm').onsubmit = async (e) => {
     const btn = e.target.querySelector('button[type=submit]');
     btn.disabled = true; btn.innerHTML = 'جارٍ الدخول...';
     const res = await api('auth&action=login', { method: 'POST', data });
-    if (res.success) { toast('تم تسجيل الدخول بنجاح', 'success'); setTimeout(() => location.href = 'index.php', 600); }
+    if (res.success) { toast('تم تسجيل الدخول بنجاح', 'success'); setTimeout(() => location.href = res.redirect || 'index.php', 600); }
     else { toast(res.message || 'بيانات غير صحيحة', 'error'); btn.disabled = false; btn.innerHTML = 'تسجيل الدخول'; }
 };
 document.getElementById('registerForm').onsubmit = async (e) => {
@@ -92,12 +92,12 @@ document.getElementById('registerForm').onsubmit = async (e) => {
     const btn = e.target.querySelector('button[type=submit]');
     btn.disabled = true; btn.innerHTML = 'جارٍ الإنشاء...';
     const res = await api('auth&action=register', { method: 'POST', data });
-    if (res.success) { toast('تم إنشاء الحساب بنجاح', 'success'); setTimeout(() => location.href = 'index.php', 800); }
+    if (res.success) { toast('تم إنشاء الحساب بنجاح', 'success'); setTimeout(() => location.href = res.redirect || 'index.php', 800); }
     else { toast(res.message || 'تعذر إنشاء الحساب', 'error'); btn.disabled = false; btn.innerHTML = 'إنشاء حساب جديد'; }
 };
 async function quickLogin(phone, password) {
     const res = await api('auth&action=login', { method: 'POST', data: { phone, password } });
-    if (res.success) { toast('تم الدخول السريع', 'success'); setTimeout(() => location.href = 'index.php', 500); }
+    if (res.success) { toast('تم الدخول السريع', 'success'); const params = new URLSearchParams(window.location.search); setTimeout(() => location.href = params.get('redirect') || 'index.php', 500); }
     else toast(res.message, 'error');
 }
 function showForgot() {

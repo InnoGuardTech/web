@@ -40,7 +40,7 @@ if ($method === 'GET') {
         // زيادة المشاهدات (مرة لكل IP في اليوم)
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $viewerId = $_SESSION['user_id'] ?? null;
-        $checkView = $db->prepare("SELECT COUNT(*) FROM ad_view_stats WHERE adId = ? AND (ip = ? OR viewerId = ?) AND viewedAt > DATE_SUB(NOW(), INTERVAL 1 DAY)");
+        $checkView = $db->prepare("SELECT COUNT(*) FROM ad_view_stats WHERE adId = ? AND (ip = ? OR viewerId = ?) AND viewedAt > datetime('now', '-1 day')");
         $checkView->execute([$adId, $ip, $viewerId]);
         if ($checkView->fetchColumn() == 0) {
             $db->prepare("UPDATE ads SET views = views + 1 WHERE id = ?")->execute([$adId]);
@@ -254,17 +254,16 @@ if ($method === 'GET') {
             $params[] = $maxPrice;
         }
         if ($minYear > 0) {
-            $where[] = "CAST(a.carYear AS UNSIGNED) >= ?";
+            $where[] = "CAST(a.carYear AS INTEGER) >= ?";
             $params[] = $minYear;
         }
         if ($maxYear > 0) {
-            $where[] = "CAST(a.carYear AS UNSIGNED) <= ?";
+            $where[] = "CAST(a.carYear AS INTEGER) <= ?";
             $params[] = $maxYear;
         }
         if (!empty($q)) {
-            // بحث FULLTEXT + LIKE احتياطي
-            $where[] = "(MATCH(a.title, a.description) AGAINST (? IN NATURAL LANGUAGE MODE) OR a.title LIKE ? OR a.description LIKE ?)";
-            $params[] = $q;
+            // SQLite doesn't support MATCH AGAINST by default, use LIKE
+            $where[] = "(a.title LIKE ? OR a.description LIKE ?)";
             $params[] = "%$q%";
             $params[] = "%$q%";
         }

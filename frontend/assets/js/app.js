@@ -77,7 +77,10 @@ async function api(routeAction, options = {}) {
     const opt = {
         method: method,
         credentials: 'include',
-        headers: Object.assign({ 'Accept': 'application/json' }, options.headers || {})
+        headers: Object.assign({ 
+            'Accept': 'application/json',
+            'X-CSRF-Token': window.CSRF_TOKEN || ''
+        }, options.headers || {})
     };
 
     if (method !== 'GET') {

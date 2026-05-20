@@ -71,6 +71,7 @@ if ($_me && function_exists('getDBConnection')) {
             }
         })();
         window.CURRENT_USER = <?= $_me ? json_encode(['id'=>$_me['id'],'name'=>$_me['name'],'role'=>$_me['role']]) : 'null' ?>;
+        window.CSRF_TOKEN = "<?= function_exists('csrfToken') ? csrfToken() : '' ?>";
     </script>
 </head>
 <body>
@@ -142,7 +143,7 @@ if ($_me && function_exists('getDBConnection')) {
     <a href="favorites.php" class="dropdown-item"><?= icon('heart', ['size'=>16]) ?> المفضلة</a>
     <a href="settings.php" class="dropdown-item"><?= icon('settings', ['size'=>16]) ?> الإعدادات</a>
     <?php if (($_me['role'] ?? '') === 'admin'): ?>
-        <a href="admin.php" class="dropdown-item"><?= icon('dashboard', ['size'=>16]) ?> لوحة الإدارة</a>
+        <a href="admin-enhanced.php" class="dropdown-item"><?= icon('dashboard', ['size'=>16]) ?> لوحة الإدارة</a>
     <?php endif; ?>
     <div style="border-top:1px solid var(--line-soft);margin-top:6px;padding-top:6px;">
         <a href="#" onclick="event.preventDefault();logout()" class="dropdown-item" style="color:var(--danger);"><?= icon('log-out', ['size'=>16]) ?> تسجيل خروج</a>

@@ -1,7 +1,13 @@
 <?php
 require_once __DIR__ . '/../backend/config.php';
 if (function_exists('secureSession')) { secureSession(); } else { session_start(); }
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') { header('Location: index.php'); exit; }
+$db = getDBConnection();
+$currentUser = getCurrentUser($db);
+if (!$currentUser || $currentUser['role'] !== 'admin') {
+    header('Location: index.php');
+    exit;
+}
+$_SESSION['user_role'] = $currentUser['role']; // مزامنة الدور في الجلسة
 define('PAGE_TITLE', 'لوحة الإدارة | حراج اليمن');
 require __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/icons.php';

@@ -36,3 +36,6 @@ uploads/ads/*
 uploads/avatars/*
 uploads/chat/*
 uploads/commission/*
+
+# SQLite database
+database.sqlite

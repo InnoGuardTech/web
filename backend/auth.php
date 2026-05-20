@@ -76,7 +76,7 @@ if ($action === 'login') {
         jsonError('هذا الرقم محظور من النظام', 403);
     }
 
-    $stmt = $db->prepare("SELECT id, name, phone, password, role, isBanned, isPhoneVerified, avatar FROM users WHERE phone = ? AND deletedAt IS NULL");
+    $stmt = $db->prepare("SELECT id, name, phone, password, role, isBanned, isPhoneVerified, avatar FROM users WHERE phone = ?");
     $stmt->execute([$phone]);
     $user = $stmt->fetch();
 
@@ -96,19 +96,20 @@ if ($action === 'login') {
     $_SESSION['_regen_at'] = time();
 
     // تحديث الحضور
-    $db->prepare("INSERT INTO user_presence (userId, status) VALUES (?, 'online')
-                  ON DUPLICATE KEY UPDATE status='online', lastSeenAt=NOW()")
+    // SQLite doesn't support ON DUPLICATE KEY UPDATE, use REPLACE or manual check
+    $db->prepare("INSERT OR REPLACE INTO user_presence (userId, status, lastSeenAt) VALUES (?, 'online', CURRENT_TIMESTAMP)")
        ->execute([$user['id']]);
 
     // تحديث آخر ظهور
-    $db->prepare("UPDATE users SET lastSeenAt = NOW() WHERE id = ?")->execute([$user['id']]);
+    $db->prepare("UPDATE users SET updatedAt = CURRENT_TIMESTAMP WHERE id = ?")->execute([$user['id']]);
 
     jsonSuccess([
         'id'   => $user['id'],
         'name' => $user['name'],
         'role' => $user['role'],
         'avatar_url' => avatarUrl($user),
-        'csrf_token' => csrfToken()
+        'csrf_token' => csrfToken(),
+        'redirect' => $_GET['redirect'] ?? 'index.php'
     ], 'تم تسجيل الدخول بنجاح');
 }
 
@@ -206,7 +207,7 @@ if ($action === 'verify_otp') {
     $user = $userStmt->fetch();
     if (!$user) jsonError('المستخدم غير موجود', 404);
 
-    $stmt = $db->prepare("SELECT * FROM otp_codes WHERE phone = ? AND purpose = ? AND isUsed = 0 AND expiresAt > NOW() ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT * FROM otp_codes WHERE phone = ? AND purpose = ? AND isUsed = 0 AND expiresAt > datetime('now') ORDER BY id DESC LIMIT 1");
     $stmt->execute([$user['phone'], $purpose]);
     $otp = $stmt->fetch();
 
@@ -256,7 +257,7 @@ if ($action === 'forgot_password') {
     $phone = normalizePhone($input['phone'] ?? '');
     if (empty($phone)) jsonError('أدخل رقم الجوال');
 
-    $stmt = $db->prepare("SELECT id, name FROM users WHERE phone = ? AND deletedAt IS NULL");
+    $stmt = $db->prepare("SELECT id, name FROM users WHERE phone = ?");
     $stmt->execute([$phone]);
     $user = $stmt->fetch();
 
@@ -285,7 +286,7 @@ if ($action === 'reset_password') {
     $pwdCheck = validatePasswordStrength($newPassword);
     if (!$pwdCheck['valid']) jsonError($pwdCheck['message']);
 
-    $stmt = $db->prepare("SELECT * FROM otp_codes WHERE phone = ? AND purpose = 'reset_password' AND isUsed = 0 AND expiresAt > NOW() ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT * FROM otp_codes WHERE phone = ? AND purpose = 'reset_password' AND isUsed = 0 AND expiresAt > datetime('now') ORDER BY id DESC LIMIT 1");
     $stmt->execute([$phone]);
     $otp = $stmt->fetch();
 

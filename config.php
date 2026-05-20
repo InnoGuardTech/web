@@ -3,9 +3,6 @@
  * ============================================================
  * حراج اليمن - ملف الإعدادات الرئيسي (v2.0)
  * ============================================================
- * - يقرأ من .env بدلاً من Hardcoded
- * - يجلسة آمنة (HttpOnly + SameSite)
- * - دوال مساعدة موحدة
  */
 
 require_once __DIR__ . '/backend/lib/env.php';
@@ -14,6 +11,7 @@ require_once __DIR__ . '/backend/lib/upload.php';
 require_once __DIR__ . '/backend/lib/mailer.php';
 
 // ---------- إعدادات قاعدة البيانات ----------
+define('DB_TYPE', env('DB_TYPE', 'sqlite')); // استخدام sqlite افتراضياً في الساندبوكس
 define('DB_HOST', env('DB_HOST', 'localhost'));
 define('DB_PORT', env('DB_PORT', '3306'));
 define('DB_NAME', env('DB_NAME', 'haraj_db'));
@@ -27,7 +25,7 @@ define('SITE_SLOGAN', 'أكبر منصة بيع وشراء في الجمهوري
 define('SITE_CURRENCY', 'ريال يمني');
 define('SITE_CURRENCY_SHORT', 'ر.ي');
 define('COMMISSION_RATE', (float) env('COMMISSION_RATE', 0.01));
-define('APP_DEBUG', (bool) env('APP_DEBUG', false));
+define('APP_DEBUG', (bool) env('APP_DEBUG', true));
 define('APP_URL', env('APP_URL', 'http://localhost'));
 
 // ---------- خطأ + جلسة آمنة ----------
@@ -55,6 +53,14 @@ function getDBConnection() {
     if ($pdo) return $pdo;
 
     try {
+        if (DB_TYPE === 'sqlite') {
+            $dbPath = __DIR__ . '/database.sqlite';
+            $pdo = new PDO("sqlite:" . $dbPath);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            return $pdo;
+        }
+
         $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
         $pdo = new PDO($dsn, DB_USER, DB_PASS, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -64,27 +70,10 @@ function getDBConnection() {
         ]);
         return $pdo;
     } catch (PDOException $e) {
-        // محاولة إنشاء قاعدة البيانات تلقائياً
-        try {
-            $tempPdo = new PDO("mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";charset=" . DB_CHARSET,
-                              DB_USER, DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-            $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-
-            // تشغيل setup
-            require_once __DIR__ . '/scripts/db_setup.php';
-
-            $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false
-            ]);
-            return $pdo;
-        } catch (PDOException $e2) {
-            if (APP_DEBUG) {
-                die('❌ فشل الاتصال بقاعدة البيانات: ' . $e2->getMessage());
-            }
-            die('❌ فشل الاتصال بقاعدة البيانات. يرجى المحاولة لاحقاً.');
+        if (APP_DEBUG) {
+            die('❌ فشل الاتصال بقاعدة البيانات: ' . $e->getMessage());
         }
+        die('❌ فشل الاتصال بقاعدة البيانات. يرجى المحاولة لاحقاً.');
     }
 }
 
@@ -153,11 +142,8 @@ function getCategoryName($cat) {
 // ---------- Slugify للـ SEO URLs ----------
 function makeSlug($text, $maxLength = 50) {
     if (empty($text)) return '';
-    // إزالة الحركات العربية
     $text = preg_replace('/[\x{064B}-\x{065F}\x{0670}]/u', '', $text);
-    // استبدال المسافات والشرطات بشرطة
     $text = preg_replace('/[\s\-_]+/u', '-', $text);
-    // إزالة أي شيء غير حروف/أرقام/شرطة (الحفاظ على العربي)
     $text = preg_replace('/[^\p{L}\p{N}\-]+/u', '', $text);
     $text = trim($text, '-');
     if (mb_strlen($text) > $maxLength) {
@@ -167,16 +153,13 @@ function makeSlug($text, $maxLength = 50) {
     return $text ?: 'ad';
 }
 
-// ---------- إنشاء URL إعلان SEO-friendly ----------
 function adUrl($adId, $title = '') {
     $slug = makeSlug($title);
     return "ad.php?id=$adId" . ($slug ? "&slug=$slug" : '');
 }
 
-// ---------- صورة الأفاتار الافتراضية ----------
 function avatarUrl($user) {
-    if (!empty($user['avatar'])) return imageUrl($user['avatar']);
-    // SVG افتراضي بالأحرف الأولى
+    if (!empty($user['avatar'])) return $user['avatar'];
     $name = $user['name'] ?? '؟';
     $initial = mb_substr($name, 0, 1);
     $colors = ['#0F2942','#0D9488','#C5A059','#7C3AED','#DC2626','#2563EB'];
@@ -185,7 +168,6 @@ function avatarUrl($user) {
     return 'data:image/svg+xml;base64,' . base64_encode($svg);
 }
 
-// ---------- صورة الإعلان الافتراضية ----------
 function defaultAdImage($category = 'other') {
     $emoji = getCategoryIcon($category);
     $color = '#0F2942';
@@ -193,10 +175,9 @@ function defaultAdImage($category = 'other') {
     return 'data:image/svg+xml;base64,' . base64_encode($svg);
 }
 
-// ---------- استخراج أول صورة من قائمة JSON ----------
 function firstImage($imagesJson, $category = 'other') {
     if (empty($imagesJson)) return defaultAdImage($category);
     $imgs = is_array($imagesJson) ? $imagesJson : json_decode($imagesJson, true);
     if (empty($imgs) || !is_array($imgs)) return defaultAdImage($category);
-    return imageUrl($imgs[0]);
+    return $imgs[0];
 }
