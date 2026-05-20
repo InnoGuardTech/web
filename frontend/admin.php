@@ -11,14 +11,14 @@ require_once __DIR__ . '/../config.php';
 // التحقق من الصلاحيات
 $_me = getCurrentUser();
 if (!$_me || $_me['role'] !== 'admin') {
-    header('Location: auth.php?redirect=admin-enhanced.php');
+    header('Location: auth.php?redirect=admin.php');
     exit;
 }
 
 // إعدادات الصفحة
 define('PAGE_TITLE', 'لوحة الإدارة - حراج اليمن');
 define('PAGE_DESC', 'إدارة الإعلانات والمستخدمين والبلاغات والعمولات');
-define('PAGE_URL', APP_URL . '/frontend/admin-enhanced.php');
+define('PAGE_URL', APP_URL . '/frontend/admin.php');
 define('PAGE_OG_IMAGE', '');
 define('EXTRA_HEAD', '
     <link rel="stylesheet" href="assets/css/improvements.css">
@@ -187,7 +187,7 @@ define('EXTRA_HEAD', '
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<main class="container" style="margin-top: var(--sp-6); margin-bottom: var(--sp-6);">
+<section class="admin-page" style="margin-top: var(--sp-6); margin-bottom: var(--sp-6);">
     <div style="margin-bottom: var(--sp-6);">
         <h1 style="font-size: 28px; font-weight: 800; margin-bottom: var(--sp-2);">لوحة الإدارة</h1>
         <p style="color: var(--text-soft);">مرحباً بك <?= htmlspecialchars($_me['name']) ?> - إدارة المنصة والمستخدمين</p>
@@ -215,12 +215,12 @@ require_once __DIR__ . '/includes/header.php';
     
     <!-- Admin Tabs -->
     <div class="admin-tabs">
-        <button class="active" onclick="switchTab('overview')">نظرة عامة</button>
-        <button onclick="switchTab('ads')">الإعلانات</button>
-        <button onclick="switchTab('users')">المستخدمون</button>
-        <button onclick="switchTab('reports')">البلاغات</button>
-        <button onclick="switchTab('commissions')">العمولات</button>
-        <button onclick="switchTab('settings')">الإعدادات</button>
+        <button class="active" onclick="switchTab('overview', this)">نظرة عامة</button>
+        <button onclick="switchTab('ads', this)">الإعلانات</button>
+        <button onclick="switchTab('users', this)">المستخدمون</button>
+        <button onclick="switchTab('reports', this)">البلاغات</button>
+        <button onclick="switchTab('commissions', this)">العمولات</button>
+        <button onclick="switchTab('settings', this)">الإعدادات</button>
     </div>
     
     <!-- Admin Content -->
@@ -230,13 +230,10 @@ require_once __DIR__ . '/includes/header.php';
             <p style="margin-top: var(--sp-4); color: var(--muted);">جاري التحميل...</p>
         </div>
     </div>
-</main>
-
-<div id="toastContainer" style="position: fixed; bottom: var(--sp-4); right: var(--sp-4); z-index: 9999; display: flex; flex-direction: column; gap: var(--sp-2);"></div>
+</section>
 
 <script>
 const API_BASE = '../backend/router.php';
-
 // ===== Utility Functions =====
 function toast(msg, type = 'info', duration = 3500) {
     const c = document.getElementById('toastContainer');
@@ -287,21 +284,26 @@ async function api(routeAction, options = {}) {
 
 function escapeHtml(text) {
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    return String(text ?? '').replace(/[&<>"']/g, m => map[m]);
 }
 
 function fmtPrice(price) {
-    return new Intl.NumberFormat('ar-YE', { style: 'currency', currency: 'YER' }).format(price);
+    const n = Number(price);
+    if (!Number.isFinite(n) || n <= 0) return 'السعر عند التواصل';
+    return new Intl.NumberFormat('ar-YE').format(n) + ' ر.ي';
 }
 
 function fmtDate(date) {
-    return new Date(date).toLocaleDateString('ar-YE', { year: 'numeric', month: 'short', day: 'numeric' });
+    if (!date) return '-';
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return String(date);
+    return parsed.toLocaleDateString('ar-YE', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 // ===== Tab Switching =====
-function switchTab(tab) {
+function switchTab(tab, button) {
     document.querySelectorAll('.admin-tabs button').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    if (button) button.classList.add('active');
     
     switch(tab) {
         case 'overview': renderOverview(); break;
@@ -356,7 +358,7 @@ async function renderOverview() {
 // ===== Ads Tab =====
 async function renderAds() {
     const res = await api('admin&action=list_ads');
-    const ads = res.ads || res.data || [];
+    const ads = res.ads || res.data?.ads || [];
     
     document.getElementById('adminContent').innerHTML = `
         <div>
@@ -382,11 +384,11 @@ async function renderAds() {
                         ${ads.map(ad => `
                         <tr>
                             <td>${escapeHtml(ad.title || ad.name || 'بدون عنوان')}</td>
-                            <td>${escapeHtml(ad.user_name || ad.userName || '-')}</td>
+                            <td>${escapeHtml(ad.authorName || ad.user_name || ad.userName || '-')}</td>
                             <td>${escapeHtml(ad.category || '-')}</td>
-                            <td>${fmtPrice(ad.price || 0)}</td>
+                            <td>${fmtPrice(ad.priceRaw ?? ad.price ?? 0)}</td>
                             <td><span class="status-badge status-${ad.status === 'active' ? 'active' : ad.status === 'pending' ? 'pending' : 'inactive'}">${ad.status === 'active' ? 'نشط' : ad.status === 'pending' ? 'معلق' : 'معطل'}</span></td>
-                            <td>${fmtDate(ad.created_at || ad.createdAt)}</td>
+                            <td>${fmtDate(ad.createdAt || ad.created_at || ad.date)}</td>
                             <td>
                                 <div class="action-buttons">
                                     <a href="ad.php?id=${ad.id}" target="_blank" class="btn btn-secondary btn-sm">عرض</a>
@@ -413,7 +415,7 @@ async function deleteAd(id) {
 // ===== Users Tab =====
 async function renderUsers() {
     const res = await api('admin&action=list_users');
-    const users = res.users || res.data || [];
+    const users = res.users || res.data?.users || [];
     
     document.getElementById('adminContent').innerHTML = `
         <div>
@@ -477,7 +479,7 @@ async function unbanUser(id) {
 // ===== Reports Tab =====
 async function renderReports() {
     const res = await api('admin&action=reports');
-    const reports = res.reports || res.data || [];
+    const reports = res.reports || res.data?.reports || res.data || [];
     
     document.getElementById('adminContent').innerHTML = `
         <div>
@@ -518,7 +520,7 @@ async function resolveReport(id) {
 // ===== Commissions Tab =====
 async function renderCommissions() {
     const res = await api('admin&action=commissions');
-    const commissions = res.commissions || res.data || [];
+    const commissions = res.commissions || res.data?.commissions || res.data || [];
     
     document.getElementById('adminContent').innerHTML = `
         <div>
@@ -542,11 +544,11 @@ async function renderCommissions() {
                     <tbody>
                         ${commissions.map(c => `
                         <tr>
-                            <td>${escapeHtml(c.user_name || c.userName || '-')}</td>
+                            <td>${escapeHtml(c.userName || c.user_name || '-')}</td>
                             <td>#${c.ad_id || c.adId}</td>
-                            <td>${fmtPrice(c.amount || 0)}</td>
-                            <td><span class="status-badge status-${c.status === 'paid' ? 'active' : 'pending'}">${c.status === 'paid' ? 'مدفوع' : 'معلق'}</span></td>
-                            <td>${fmtDate(c.created_at || c.createdAt)}</td>
+                            <td>${fmtPrice(c.amountRaw ?? c.amount ?? 0)}</td>
+                            <td><span class="status-badge status-${c.status === 'approved' || c.status === 'paid' ? 'active' : 'pending'}">${c.status === 'approved' || c.status === 'paid' ? 'مقبول' : 'معلق'}</span></td>
+                            <td>${fmtDate(c.createdAt || c.created_at || c.date)}</td>
                             <td>
                                 ${c.status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="approveCommission(${c.id})">تأكيد</button>` : '-'}
                             </td>

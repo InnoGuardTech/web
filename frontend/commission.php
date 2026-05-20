@@ -38,7 +38,10 @@ require_once __DIR__ . '/includes/icons.php';
             <div class="field"><label class="field-label">رقم الإعلان المباع *</label><input type="number" class="input" name="ad_id" required></div>
             <div class="field"><label class="field-label">سعر البيع (ر.ي) *</label><input type="number" class="input" name="sale_price" required></div>
             <div class="field"><label class="field-label">مبلغ العمولة المحوّل (1%) *</label><input type="number" class="input" name="amount" required step="0.01"></div>
+            <div class="field"><label class="field-label">البنك/جهة التحويل *</label><input type="text" class="input" name="bank_name" required placeholder="مثال: بنك اليمن والكويت"></div>
+            <div class="field"><label class="field-label">تاريخ التحويل *</label><input type="date" class="input" name="transfer_date" required></div>
             <div class="field"><label class="field-label">رقم/مرجع التحويل *</label><input type="text" class="input" name="reference" required></div>
+            <div class="field"><label class="field-label">صورة إثبات التحويل *</label><input type="file" class="input" name="proof_file" accept="image/*" required></div>
             <div class="field"><label class="field-label">ملاحظات (اختياري)</label><textarea class="textarea" name="notes" rows="3"></textarea></div>
             <button type="submit" class="btn btn-primary btn-block btn-lg"><?= icon('check-circle', ['size'=>18]) ?> إرسال إثبات التحويل</button>
         </form>
@@ -47,10 +50,24 @@ require_once __DIR__ . '/includes/icons.php';
 <script>
 document.getElementById('commissionForm').onsubmit = async (e) => {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.target));
+    const fd = new FormData(e.target);
+    const data = Object.fromEntries(fd);
+    const proofFile = fd.get('proof_file');
+    if (proofFile && proofFile.size) {
+        data.proof_image = await fileToDataUrl(proofFile);
+    }
+    delete data.proof_file;
     const res = await api('commission&action=submit', { method: 'POST', data });
     if (res.success) { toast('تم استلام البيانات. سيتم المراجعة قريباً.', 'success'); e.target.reset(); }
     else toast(res.message || 'حدث خطأ', 'error');
 };
+function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
 </script>
 <?php require __DIR__ . '/includes/footer.php'; ?>

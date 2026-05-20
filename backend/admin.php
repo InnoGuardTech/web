@@ -24,11 +24,11 @@ if ($method === 'GET') {
             'totalMessages'    => (int)$db->query("SELECT COUNT(*) FROM messages")->fetchColumn(),
             'totalCommissions' => (float)($db->query("SELECT COALESCE(SUM(amount),0) FROM commission_transfers WHERE status = 'approved'")->fetchColumn()),
             'pendingCommissions' => (int)$db->query("SELECT COUNT(*) FROM commission_transfers WHERE status = 'pending'")->fetchColumn(),
-            'newUsersToday'    => (int)$db->query("SELECT COUNT(*) FROM users WHERE date(createdAt) = date('now')")->fetchColumn(),
-            'newAdsToday'      => (int)$db->query("SELECT COUNT(*) FROM ads WHERE date(createdAt) = date('now') AND status != 'removed'")->fetchColumn(),
+            'newUsersToday'    => (int)$db->query("SELECT COUNT(*) FROM users WHERE DATE(createdAt) = CURDATE()")->fetchColumn(),
+            'newAdsToday'      => (int)$db->query("SELECT COUNT(*) FROM ads WHERE DATE(createdAt) = CURDATE() AND status != 'removed'")->fetchColumn(),
         ];
         // إحصائيات آخر 7 أيام
-        $weeklyStmt = $db->query("SELECT date(createdAt) AS day, COUNT(*) AS c FROM ads WHERE createdAt > date('now', '-7 days') GROUP BY day ORDER BY day");
+        $weeklyStmt = $db->query("SELECT DATE(createdAt) AS day, COUNT(*) AS c FROM ads WHERE createdAt > DATE_SUB(CURDATE(), INTERVAL 7 DAY) GROUP BY day ORDER BY day");
         $stats['weeklyAds'] = $weeklyStmt->fetchAll();
         jsonSuccess($stats);
     }
@@ -83,12 +83,15 @@ if ($method === 'GET') {
                 'title' => $a['title'],
                 'category' => getCategoryName($a['category']),
                 'price' => formatPrice($a['price']),
+                'priceRaw' => (float)$a['price'],
                 'city' => $a['city'],
                 'status' => $a['status'],
                 'views' => (int)$a['views'],
                 'authorName' => $a['authorName'],
+                'userName' => $a['authorName'],
                 'authorId' => (int)$a['authorId'],
-                'date' => formatArabicDate($a['createdAt'])
+                'date' => formatArabicDate($a['createdAt']),
+                'createdAt' => $a['createdAt']
             ];
         }, $stmt->fetchAll());
         jsonSuccess(['ads' => $ads, 'total' => $total, 'page' => $page, 'per_page' => $perPage]);
@@ -100,7 +103,13 @@ if ($method === 'GET') {
                             LEFT JOIN ads a ON r.adId = a.id
                             LEFT JOIN users u ON r.reporterId = u.id
                             ORDER BY r.status = 'pending' DESC, r.createdAt DESC LIMIT 100");
-        jsonSuccess($stmt->fetchAll());
+        $reports = array_map(function($r) {
+            $r['reporter_name'] = $r['reporterName'] ?? null;
+            $r['ad_id'] = $r['adId'] ?? null;
+            $r['body'] = $r['details'] ?? null;
+            return $r;
+        }, $stmt->fetchAll());
+        jsonSuccess(['reports' => $reports]);
     }
 
     if ($action === 'commissions') {
@@ -113,8 +122,10 @@ if ($method === 'GET') {
             return [
                 'id' => (int)$t['id'],
                 'userName' => $t['userName'],
+                'user_name' => $t['userName'],
                 'userPhone' => $t['userPhone'],
                 'adTitle' => $t['adTitle'],
+                'adId' => $t['adId'] ? (int)$t['adId'] : null,
                 'amount' => formatPrice($t['amount']),
                 'amountRaw' => (float)$t['amount'],
                 'bankName' => $t['bankName'],
@@ -122,10 +133,11 @@ if ($method === 'GET') {
                 'proofImage' => $t['proofImage'] ? imageUrl($t['proofImage']) : null,
                 'status' => $t['status'],
                 'notes' => $t['notes'],
-                'date' => formatArabicDate($t['createdAt'])
+                'date' => formatArabicDate($t['createdAt']),
+                'createdAt' => $t['createdAt']
             ];
         }, $stmt->fetchAll());
-        jsonSuccess($list);
+        jsonSuccess(['commissions' => $list]);
     }
 }
 

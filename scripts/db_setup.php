@@ -31,7 +31,7 @@ try {
         [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES $dbCharset COLLATE ${dbCharset}_unicode_ci"
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES $dbCharset COLLATE {$dbCharset}_unicode_ci"
         ]
     );
 
@@ -39,8 +39,24 @@ try {
 
     // إنشاء قاعدة البيانات
     echo "📝 إنشاء قاعدة البيانات...\n";
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET $dbCharset COLLATE ${dbCharset}_unicode_ci");
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET $dbCharset COLLATE {$dbCharset}_unicode_ci");
     $pdo->exec("USE `$dbName`");
+
+    $columnExists = function($table, $column) use ($pdo, $dbName) {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?");
+        $stmt->execute([$dbName, $table, $column]);
+        return (int)$stmt->fetchColumn() > 0;
+    };
+
+    $addColumnIfMissing = function($table, $column, $definition) use ($pdo, $columnExists) {
+        if (!$columnExists($table, $column)) {
+            $pdo->exec("ALTER TABLE `$table` ADD COLUMN $definition");
+        }
+    };
+
+    $execQuiet = function($sql) use ($pdo) {
+        try { $pdo->exec($sql); } catch (Throwable $e) {}
+    };
     echo "✅ تم إنشاء قاعدة البيانات\n\n";
 
     // ============ جدول المستخدمين ============
@@ -69,7 +85,7 @@ try {
             INDEX idx_role (role),
             INDEX idx_isBanned (isBanned),
             INDEX idx_deletedAt (deletedAt)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول المستخدمين\n";
 
@@ -89,11 +105,19 @@ try {
             carYear INT,
             carTransmission VARCHAR(30),
             carMileage INT,
+            propertyType VARCHAR(50),
+            propertyRooms VARCHAR(50),
+            propertyContract VARCHAR(50),
+            latitude DECIMAL(10,8) NULL,
+            longitude DECIMAL(11,8) NULL,
+            locationName VARCHAR(255),
             images JSON,
             specifications JSON,
             views INT DEFAULT 0,
             isFeatured TINYINT DEFAULT 0,
-            status ENUM('active','inactive','sold','expired') DEFAULT 'active',
+            isPinned TINYINT DEFAULT 0,
+            bumpedAt TIMESTAMP NULL,
+            status ENUM('active','inactive','sold','expired','archived','pending','rejected','removed','deleted') DEFAULT 'active',
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
@@ -103,7 +127,7 @@ try {
             INDEX idx_status (status),
             INDEX idx_isFeatured (isFeatured),
             FULLTEXT INDEX ft_title_desc (title, description)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول الإعلانات\n";
 
@@ -119,20 +143,58 @@ try {
             FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (adId) REFERENCES ads(id) ON DELETE CASCADE,
             INDEX idx_userId (userId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول المفضلة\n";
 
     // ============ جدول الرسائل ============
     echo "📝 إنشاء جدول الرسائل...\n";
     $pdo->exec("
+        CREATE TABLE IF NOT EXISTS comments (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            adId INT NOT NULL,
+            userId INT NULL,
+            username VARCHAR(100),
+            content TEXT NOT NULL,
+            type VARCHAR(30) DEFAULT 'comment',
+            offerAmount DECIMAL(15,2) NULL,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (adId) REFERENCES ads(id) ON DELETE CASCADE,
+            FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL,
+            INDEX idx_adId (adId),
+            INDEX idx_createdAt (createdAt)
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS ad_view_stats (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            adId INT NOT NULL,
+            viewerId INT NULL,
+            ip VARCHAR(64),
+            viewedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (adId) REFERENCES ads(id) ON DELETE CASCADE,
+            FOREIGN KEY (viewerId) REFERENCES users(id) ON DELETE SET NULL,
+            INDEX idx_ad_view (adId, viewedAt),
+            INDEX idx_viewer (viewerId),
+            INDEX idx_ip (ip)
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
+    ");
+
+    $pdo->exec("
         CREATE TABLE IF NOT EXISTS messages (
             id INT PRIMARY KEY AUTO_INCREMENT,
+            threadId INT,
             senderId INT NOT NULL,
-            receiverId INT NOT NULL,
+            receiverId INT,
             adId INT,
-            content TEXT NOT NULL,
+            content TEXT,
+            text TEXT,
+            type VARCHAR(20) DEFAULT 'text',
+            attachment VARCHAR(500),
             isRead TINYINT DEFAULT 0,
+            readAt TIMESTAMP NULL,
+            isDeleted TINYINT DEFAULT 0,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (senderId) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (receiverId) REFERENCES users(id) ON DELETE CASCADE,
@@ -141,7 +203,7 @@ try {
             INDEX idx_receiverId (receiverId),
             INDEX idx_isRead (isRead),
             INDEX idx_createdAt (createdAt)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول الرسائل\n";
 
@@ -161,7 +223,7 @@ try {
             INDEX idx_userId (userId),
             INDEX idx_isRead (isRead),
             INDEX idx_createdAt (createdAt)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول الإشعارات\n";
 
@@ -183,7 +245,7 @@ try {
             INDEX idx_targetUserId (targetUserId),
             INDEX idx_authorUserId (authorUserId),
             INDEX idx_adId (adId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول التقييمات\n";
 
@@ -203,7 +265,7 @@ try {
             FOREIGN KEY (adId) REFERENCES ads(id) ON DELETE SET NULL,
             INDEX idx_toUserId (toUserId),
             INDEX idx_fromUserId (fromUserId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول Ratings\n";
 
@@ -212,19 +274,23 @@ try {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS reports (
             id INT PRIMARY KEY AUTO_INCREMENT,
-            userId INT NOT NULL,
+            userId INT,
+            reporterId INT NOT NULL,
             adId INT,
             targetUserId INT,
             reason VARCHAR(100) NOT NULL,
             description TEXT,
+            details TEXT,
             status ENUM('pending','reviewed','resolved','rejected') DEFAULT 'pending',
+            resolvedBy INT NULL,
+            resolvedAt TIMESTAMP NULL,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (reporterId) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (adId) REFERENCES ads(id) ON DELETE SET NULL,
             FOREIGN KEY (targetUserId) REFERENCES users(id) ON DELETE SET NULL,
             INDEX idx_status (status),
             INDEX idx_createdAt (createdAt)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول التقارير\n";
 
@@ -242,7 +308,7 @@ try {
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_phone (phone),
             INDEX idx_expiresAt (expiresAt)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول رموز OTP\n";
 
@@ -257,7 +323,7 @@ try {
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_phone (phone),
             INDEX idx_email (email)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول القائمة السوداء\n";
 
@@ -270,27 +336,31 @@ try {
             status ENUM('online','offline','away') DEFAULT 'offline',
             lastSeenAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول حضور المستخدمين\n";
 
     // ============ جدول العمولات ============
     echo "📝 إنشاء جدول العمولات...\n";
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS commissions (
+        CREATE TABLE IF NOT EXISTS commission_transfers (
             id INT PRIMARY KEY AUTO_INCREMENT,
-            adId INT NOT NULL,
+            adId INT NULL,
             userId INT NOT NULL,
             amount DECIMAL(15,2) NOT NULL,
-            status ENUM('pending','paid','failed') DEFAULT 'pending',
-            transactionId VARCHAR(100),
+            bankName VARCHAR(100) NOT NULL,
+            transferDate DATE NOT NULL,
+            proofImage VARCHAR(500),
+            notes TEXT,
+            status ENUM('pending','approved','rejected') DEFAULT 'pending',
+            reviewedBy INT NULL,
+            reviewedAt TIMESTAMP NULL,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            paidAt TIMESTAMP NULL,
-            FOREIGN KEY (adId) REFERENCES ads(id) ON DELETE CASCADE,
+            FOREIGN KEY (adId) REFERENCES ads(id) ON DELETE SET NULL,
             FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
             INDEX idx_userId (userId),
             INDEX idx_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول العمولات\n";
 
@@ -305,7 +375,7 @@ try {
             description TEXT,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_slug (slug)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول فئات الإعلانات\n";
 
@@ -318,7 +388,7 @@ try {
             region VARCHAR(100),
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_name (name)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول المدن\n";
 
@@ -327,23 +397,24 @@ try {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS chat_threads (
             id INT PRIMARY KEY AUTO_INCREMENT,
-            user1Id INT NOT NULL,
-            user2Id INT NOT NULL,
+            buyerId INT NOT NULL,
+            sellerId INT NOT NULL,
             adId INT,
-            lastMessage TEXT,
+            lastMessageId INT NULL,
             lastMessageAt TIMESTAMP NULL,
-            user1Deleted TINYINT DEFAULT 0,
-            user2Deleted TINYINT DEFAULT 0,
+            buyerUnread INT DEFAULT 0,
+            sellerUnread INT DEFAULT 0,
+            deletedBy JSON NULL,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (user1Id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (user2Id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (buyerId) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (sellerId) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (adId) REFERENCES ads(id) ON DELETE SET NULL,
-            UNIQUE KEY unique_thread (user1Id, user2Id),
-            INDEX idx_user1Id (user1Id),
-            INDEX idx_user2Id (user2Id),
+            UNIQUE KEY unique_thread (adId, buyerId),
+            INDEX idx_buyerId (buyerId),
+            INDEX idx_sellerId (sellerId),
             INDEX idx_adId (adId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول خيوط الدردشة\n";
 
@@ -359,7 +430,7 @@ try {
             FOREIGN KEY (threadId) REFERENCES chat_threads(id) ON DELETE CASCADE,
             FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
             UNIQUE KEY unique_typing (threadId, userId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE ${dbCharset}_unicode_ci
+        ) ENGINE=InnoDB DEFAULT CHARSET=$dbCharset COLLATE {$dbCharset}_unicode_ci
     ");
     echo "✅ تم إنشاء جدول حالة الكتابة\n";
 
@@ -478,6 +549,38 @@ try {
     echo "  - تم إنشاء جميع الجداول والعلاقات\n";
     echo "  - تم إضافة البيانات التجريبية\n";
     echo "  - يمكنك الآن تسجيل الدخول باستخدام البيانات التجريبية\n";
+
+    echo "🔧 Applying compatibility migrations...\n";
+    $execQuiet("ALTER TABLE ads MODIFY status ENUM('active','inactive','sold','expired','archived','pending','rejected','removed','deleted') DEFAULT 'active'");
+    $addColumnIfMissing('ads', 'propertyType', 'propertyType VARCHAR(50) NULL');
+    $addColumnIfMissing('ads', 'propertyRooms', 'propertyRooms VARCHAR(50) NULL');
+    $addColumnIfMissing('ads', 'propertyContract', 'propertyContract VARCHAR(50) NULL');
+    $addColumnIfMissing('ads', 'latitude', 'latitude DECIMAL(10,8) NULL');
+    $addColumnIfMissing('ads', 'longitude', 'longitude DECIMAL(11,8) NULL');
+    $addColumnIfMissing('ads', 'locationName', 'locationName VARCHAR(255) NULL');
+    $addColumnIfMissing('ads', 'isPinned', 'isPinned TINYINT DEFAULT 0');
+    $addColumnIfMissing('ads', 'bumpedAt', 'bumpedAt TIMESTAMP NULL');
+    $addColumnIfMissing('messages', 'threadId', 'threadId INT NULL');
+    $addColumnIfMissing('messages', 'text', 'text TEXT NULL');
+    $addColumnIfMissing('messages', 'type', "type VARCHAR(20) DEFAULT 'text'");
+    $addColumnIfMissing('messages', 'attachment', 'attachment VARCHAR(500) NULL');
+    $addColumnIfMissing('messages', 'readAt', 'readAt TIMESTAMP NULL');
+    $addColumnIfMissing('messages', 'isDeleted', 'isDeleted TINYINT DEFAULT 0');
+    $execQuiet('ALTER TABLE messages MODIFY receiverId INT NULL');
+    $execQuiet('ALTER TABLE messages MODIFY content TEXT NULL');
+    $addColumnIfMissing('reports', 'reporterId', 'reporterId INT NULL');
+    $execQuiet('UPDATE reports SET reporterId = userId WHERE reporterId IS NULL AND userId IS NOT NULL');
+    $addColumnIfMissing('reports', 'details', 'details TEXT NULL');
+    $addColumnIfMissing('reports', 'resolvedBy', 'resolvedBy INT NULL');
+    $addColumnIfMissing('reports', 'resolvedAt', 'resolvedAt TIMESTAMP NULL');
+    $addColumnIfMissing('chat_threads', 'buyerId', 'buyerId INT NULL');
+    $addColumnIfMissing('chat_threads', 'sellerId', 'sellerId INT NULL');
+    $addColumnIfMissing('chat_threads', 'lastMessageId', 'lastMessageId INT NULL');
+    $addColumnIfMissing('chat_threads', 'buyerUnread', 'buyerUnread INT DEFAULT 0');
+    $addColumnIfMissing('chat_threads', 'sellerUnread', 'sellerUnread INT DEFAULT 0');
+    $addColumnIfMissing('chat_threads', 'deletedBy', 'deletedBy JSON NULL');
+    $execQuiet('ALTER TABLE chat_threads MODIFY user1Id INT NULL');
+    $execQuiet('ALTER TABLE chat_threads MODIFY user2Id INT NULL');
 
 } catch (PDOException $e) {
     echo "❌ خطأ: " . $e->getMessage() . "\n";

@@ -44,6 +44,7 @@ if ($method === 'POST') {
         $bankName = sanitize($input['bank_name'] ?? '');
         $transferDate = sanitize($input['transfer_date'] ?? '');
         $adId     = (int)($input['ad_id'] ?? 0) ?: null;
+        $reference = sanitize($input['reference'] ?? '');
         $notes    = sanitize($input['notes'] ?? '');
         $proof    = $input['proof_image'] ?? '';
 
@@ -54,6 +55,8 @@ if ($method === 'POST') {
 
         $upload = uploadBase64Image($proof, 'commission');
         if (!$upload['success']) jsonError($upload['message']);
+
+        $notes = trim($reference ? "Reference: $reference\n" . $notes : $notes);
 
         $db->prepare("INSERT INTO commission_transfers (userId, adId, amount, bankName, transferDate, proofImage, notes)
                       VALUES (?, ?, ?, ?, ?, ?, ?)")

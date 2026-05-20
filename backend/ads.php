@@ -165,6 +165,34 @@ if ($method === 'GET') {
         jsonSuccess($favs);
     }
 
+    // ---- تعليقات إعلان واحد ----
+    if ($action === 'comments') {
+        $adId = (int)($_GET['ad_id'] ?? $_GET['adId'] ?? $_GET['id'] ?? 0);
+        if ($adId <= 0) jsonError('معرف إعلان غير صالح');
+
+        $stmt = $db->prepare("SELECT c.*, u.name AS userName
+                              FROM comments c
+                              LEFT JOIN users u ON c.userId = u.id
+                              WHERE c.adId = ?
+                              ORDER BY c.createdAt DESC LIMIT 100");
+        $stmt->execute([$adId]);
+        $comments = array_map(function($c) {
+            return [
+                'id' => (int)$c['id'],
+                'userName' => $c['userName'] ?: $c['username'],
+                'user_name' => $c['userName'] ?: $c['username'],
+                'content' => $c['content'],
+                'body' => $c['content'],
+                'type' => $c['type'],
+                'offerAmount' => $c['offerAmount'] ? (float)$c['offerAmount'] : null,
+                'offer_amount' => $c['offerAmount'] ? (float)$c['offerAmount'] : null,
+                'createdAt' => $c['createdAt'],
+                'created_at' => $c['createdAt']
+            ];
+        }, $stmt->fetchAll());
+        jsonSuccess(['comments' => $comments]);
+    }
+
     // ---- إعلاناتي ----
     if ($action === 'my_ads') {
         requireAuth();

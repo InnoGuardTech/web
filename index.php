@@ -1,4 +1,4 @@
 <?php
-// إعادة توجيه من الجذر إلى الواجهة الأمامية
+// Redirect root requests to the frontend entry point.
 header('Location: frontend/index.php');
 exit;

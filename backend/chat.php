@@ -70,8 +70,10 @@ if ($method === 'GET') {
                 'otherAvatar' => avatarUrl(['name'=>$otherName,'avatar'=>$otherAvatar]),
                 'otherStatus' => $otherStatus ?: 'offline',
                 'unread'    => (int)$unread,
+                'unreadCount' => (int)$unread,
                 'isUnread'  => $unread > 0,
                 'lastMessage' => mb_strimwidth($lastMsg ?: '', 0, 60, '...'),
+                'lastMessageAt' => $t['lastMessageAt'],
                 'date'      => $t['lastMessageAt'] ? formatArabicDate($t['lastMessageAt']) : ''
             ];
         }
@@ -120,6 +122,9 @@ if ($method === 'GET') {
             return [
                 'id'         => (int)$m['id'],
                 'text'       => $m['text'],
+                'body'       => $m['text'],
+                'content'    => $m['text'],
+                'message'    => $m['text'],
                 'type'       => $m['type'],
                 'attachment' => $m['attachment'] ? imageUrl($m['attachment']) : null,
                 'senderId'   => (int)$m['senderId'],
@@ -264,20 +269,25 @@ if ($method === 'GET') {
 if ($method === 'POST') {
 
     // ---- إرسال رسالة ----
-    if ($action === 'send') {
+    if ($action === 'send' || $action === 'send_image') {
         requireCsrf();
-        $adId     = (int)($input['ad_id'] ?? 0);
-        $threadId = (int)($input['thread_id'] ?? 0);
-        $text     = sanitize($input['text'] ?? '');
-        $attachment = $input['attachment'] ?? null;
-        $type     = $input['type'] ?? 'text';
+        $adId     = (int)($input['ad_id'] ?? $input['adId'] ?? 0);
+        $threadId = (int)($input['thread_id'] ?? $input['threadId'] ?? 0);
+        $text     = sanitize($input['text'] ?? $input['message'] ?? $input['body'] ?? $input['content'] ?? '');
+        $attachment = $input['attachment'] ?? $input['image'] ?? null;
+        $type     = $input['type'] ?? ($action === 'send_image' ? 'image' : 'text');
 
-        if (empty($text) && empty($attachment)) jsonError('لا يمكن إرسال رسالة فارغة');
+        if (empty($text) && empty($attachment) && !isset($_FILES['image'])) jsonError('لا يمكن إرسال رسالة فارغة');
         if (mb_strlen($text) > 2000) jsonError('الرسالة طويلة جداً');
 
         // معالجة المرفق
         $attachmentPath = null;
-        if (!empty($attachment)) {
+        if ($action === 'send_image' && isset($_FILES['image'])) {
+            $upload = uploadImage($_FILES['image'], 'chat');
+            if (!$upload['success']) jsonError($upload['message']);
+            $attachmentPath = $upload['path'];
+            $type = 'image';
+        } elseif (!empty($attachment)) {
             $upload = uploadBase64Image($attachment, 'chat');
             if (!$upload['success']) jsonError($upload['message']);
             $attachmentPath = $upload['path'];

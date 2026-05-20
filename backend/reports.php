@@ -12,13 +12,23 @@ $method = $_SERVER['REQUEST_METHOD'];
 $input = getInput();
 $action = $_GET['action'] ?? $input['action'] ?? '';
 
+if ($method === 'GET') {
+    if ($action === 'my_reports') {
+        $stmt = $db->prepare("SELECT r.*, a.title AS adTitle FROM reports r
+                              LEFT JOIN ads a ON r.adId = a.id
+                              WHERE r.reporterId = ? ORDER BY r.createdAt DESC LIMIT 50");
+        $stmt->execute([$me]);
+        jsonSuccess($stmt->fetchAll());
+    }
+}
+
 if ($method === 'POST') {
     requireCsrf();
 
-    if ($action === 'submit' || $action === '') {
-        $adId    = (int)($input['ad_id'] ?? 0);
+    if (in_array($action, ['submit', 'create', ''], true)) {
+        $adId    = (int)($input['ad_id'] ?? $input['adId'] ?? 0);
         $reason  = sanitize($input['reason'] ?? '');
-        $details = sanitize($input['details'] ?? '');
+        $details = sanitize($input['details'] ?? $input['body'] ?? $input['content'] ?? '');
 
         if ($adId <= 0 || empty($reason)) jsonError('بيانات ناقصة');
         if (mb_strlen($reason) > 100) jsonError('سبب البلاغ طويل');
@@ -53,14 +63,6 @@ if ($method === 'POST') {
         }
 
         jsonSuccess([], 'تم إرسال بلاغك بنجاح. ستراجعه الإدارة قريباً.');
-    }
-
-    if ($action === 'my_reports') {
-        $stmt = $db->prepare("SELECT r.*, a.title AS adTitle FROM reports r
-                              LEFT JOIN ads a ON r.adId = a.id
-                              WHERE r.reporterId = ? ORDER BY r.createdAt DESC LIMIT 50");
-        $stmt->execute([$me]);
-        jsonSuccess($stmt->fetchAll());
     }
 }
 
