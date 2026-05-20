@@ -1,0 +1,432 @@
+/* ============================================================================
+   حراج اليمن الفاخر — تصميم عصري احترافي v5.0
+   Glassmorphism + Modern Animations + App-like UI
+   ============================================================================ */
+
+/* ===== متغيرات CSS محسّنة ===== */
+:root {
+    /* الألوان الأساسية */
+    --primary: #3b6cf6;
+    --primary-dark: #1f43b3;
+    --primary-light: #5d80fb;
+    --accent: #f5d27a;
+    --accent-dark: #e8b94e;
+    
+    /* الألوان الثانوية */
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #0ea5e9;
+    
+    /* الخلفيات */
+    --bg: #ffffff;
+    --bg-soft: #f8fafc;
+    --surface: #ffffff;
+    --surface-2: #f1f5f9;
+    
+    /* النصوص */
+    --text: #1e293b;
+    --text-soft: #64748b;
+    --muted: #94a3b8;
+    
+    /* الحدود */
+    --line: #e2e8f0;
+    --line-soft: #f1f5f9;
+    
+    /* الظلال */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 20px rgba(59, 108, 246, 0.15);
+    
+    /* التدرجات */
+    --grad-brand: linear-gradient(135deg, #3b6cf6, #5d80fb);
+    --grad-gold: linear-gradient(135deg, #f5d27a, #e8b94e);
+    
+    /* المسافات */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-7: 28px;
+    --sp-8: 32px;
+    
+    /* الزوايا */
+    --r-sm: 6px;
+    --r-md: 8px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+    --r-2xl: 20px;
+    --r-3xl: 24px;
+    --r-full: 9999px;
+    
+    /* التوقيتات */
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+    --bg: #0a0e1a;
+    --bg-soft: #111726;
+    --surface: #161d2e;
+    --surface-2: #1e2738;
+    --text: #f1f5f9;
+    --text-soft: #cbd5e1;
+    --muted: #94a3b8;
+    --line: #2d3748;
+    --line-soft: #1e2738;
+    --shadow-glow: 0 0 20px rgba(59, 108, 246, 0.25);
+}
+
+/* ===== Glassmorphism Cards ===== */
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--r-xl);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s var(--ease-spring);
+}
+
+.glass-card:hover {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+[data-theme="dark"] .glass-card {
+    background: rgba(22, 29, 46, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== Enhanced Ad Cards ===== */
+.ad-card-modern {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-2xl);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    transition: all 0.4s var(--ease-spring);
+    box-shadow: var(--shadow-md);
+}
+
+.ad-card-modern:hover {
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-light);
+}
+
+.ad-card-modern::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.ad-card-modern:hover::before {
+    opacity: 1;
+}
+
+/* ===== Enhanced Image Container ===== */
+.ad-img-modern {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--bg-soft), var(--surface-2));
+}
+
+.ad-img-modern img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease-out);
+}
+
+.ad-card-modern:hover .ad-img-modern img {
+    transform: scale(1.1) rotate(1deg);
+}
+
+/* ===== Badge Animations ===== */
+.ad-badge-modern {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 6px 14px;
+    border-radius: var(--r-full);
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2;
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* ===== Favorite Button ===== */
+.ad-fav-btn-modern {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    display: grid;
+    place-items: center;
+    color: var(--text-soft);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s var(--ease-spring);
+    z-index: 2;
+    cursor: pointer;
+}
+
+.ad-fav-btn-modern:hover {
+    transform: scale(1.2) rotate(-15deg);
+    color: var(--danger);
+    background: #fff;
+    box-shadow: var(--shadow-lg);
+}
+
+.ad-fav-btn-modern.active {
+    color: var(--danger);
+    background: #fff;
+}
+
+/* ===== Modern Buttons ===== */
+.btn-modern {
+    padding: var(--sp-3) var(--sp-5);
+    border-radius: var(--r-lg);
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s var(--ease-spring);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-modern::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+}
+
+.btn-modern:hover::before {
+    transform: translateX(100%);
+}
+
+.btn-modern-primary {
+    background: var(--grad-brand);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(59, 108, 246, 0.3);
+}
+
+.btn-modern-primary:hover {
+    box-shadow: 0 8px 25px rgba(59, 108, 246, 0.4);
+    transform: translateY(-2px);
+}
+
+.btn-modern-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+}
+
+.btn-modern-secondary:hover {
+    background: var(--surface);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* ===== Modern Input Fields ===== */
+.input-modern {
+    width: 100%;
+    padding: var(--sp-3) var(--sp-4);
+    border: 1.5px solid var(--line);
+    border-radius: var(--r-lg);
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text);
+    transition: all 0.3s var(--ease-in-out);
+}
+
+.input-modern:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: var(--shadow-glow);
+    background: var(--bg);
+}
+
+.input-modern::placeholder {
+    color: var(--muted);
+}
+
+/* ===== Modern Tabs ===== */
+.tabs-modern {
+    display: flex;
+    gap: var(--sp-2);
+    border-bottom: 2px solid var(--line);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tabs-modern button {
+    padding: var(--sp-3) var(--sp-5);
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s;
+    white-space: nowrap;
+}
+
+.tabs-modern button::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--grad-brand);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.3s var(--ease-spring);
+}
+
+.tabs-modern button.active {
+    color: var(--primary);
+}
+
+.tabs-modern button.active::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}
+
+/* ===== Modern Badges ===== */
+.badge-modern {
+    display: inline-block;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--r-full);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-modern-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.badge-modern-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.badge-modern-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+/* ===== Modern Loader ===== */
+.loader-modern {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--line);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Modern Skeleton ===== */
+.skeleton-modern {
+    background: linear-gradient(90deg, var(--bg-soft) 25%, var(--surface-2) 50%, var(--bg-soft) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ===== Responsive Grid ===== */
+.grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--sp-6);
+}
+
+@media (max-width: 1024px) {
+    .grid-modern {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: var(--sp-5);
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-modern {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: var(--sp-4);
+    }
+}
+
+@media (max-width: 480px) {
+    .grid-modern {
+        grid-template-columns: 1fr;
+        gap: var(--sp-4);
+    }
+}
+
+/* ===== Modern Transitions ===== */
+* {
+    transition: background-color 0.3s var(--ease-in-out),
+                color 0.3s var(--ease-in-out),
+                border-color 0.3s var(--ease-in-out);
+}
+
+/* ===== Accessibility ===== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+    .ad-card-modern {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}

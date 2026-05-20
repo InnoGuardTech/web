@@ -62,6 +62,8 @@ if ($_me && function_exists('getDBConnection')) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
+    <link rel="stylesheet" href="assets/css/modern-ui.css?v=<?= @filemtime(__DIR__ . '/../assets/css/modern-ui.css') ?: time() ?>">
+    <link rel="stylesheet" href="assets/css/improvements.css?v=<?= @filemtime(__DIR__ . '/../assets/css/improvements.css') ?: time() ?>">
     <?= EXTRA_HEAD ?>
     <script>
         (function() {

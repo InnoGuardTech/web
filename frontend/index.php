@@ -130,7 +130,7 @@ require_once __DIR__ . '/includes/icons.php';
             <h2 style="font-size:22px;"><span class="accent"></span>أحدث الإعلانات</h2>
             <span class="badge-tag brand" id="adsCount">جاري التحميل...</span>
         </div>
-        <div class="ads-grid" id="adsGrid">
+        <div class="ads-grid grid-modern" id="adsGrid">
             <?php for ($i = 0; $i < 6; $i++): ?>
                 <div class="ad-card">
                     <div class="skeleton" style="aspect-ratio:4/3;"></div>

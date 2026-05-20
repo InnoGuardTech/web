@@ -60,5 +60,7 @@ $_pageBase = basename($_SERVER['PHP_SELF'], '.php');
 </nav>
 
 <script src="assets/js/app.js?v=<?= @filemtime(__DIR__ . '/../assets/js/app.js') ?: time() ?>"></script>
+<script src="assets/js/modern-ui.js?v=<?= @filemtime(__DIR__ . '/../assets/js/modern-ui.js') ?: time() ?>"></script>
+<script src="assets/js/improvements.js?v=<?= @filemtime(__DIR__ . '/../assets/js/improvements.js') ?: time() ?>"></script>
 </body>
 </html>
