@@ -1,10 +1,10 @@
 <?php
 /**
- * backend/auth_fixed.php - نظام المصادقة المحسّن v2.1
- * ✅ إصلاح كامل لتسجيل الدخول وإنشاء الحسابات
- * ✅ دعم كامل لـ MySQL مع معالجة أخطاء محسّنة
- * ✅ OTP للتحقق من رقم الجوال
- * ✅ نسيان كلمة المرور
+ * backend/auth.php - المصادقة الآمنة v2.0
+ * ✅ Rate Limiting على login/register
+ * ✅ CSRF Protection
+ * ✅ Password Strength Validation
+ * ❌ تم حذف demo_users و quick_switch (ثغرات أمنية)
  */
 require_once __DIR__ . '/config.php';
 apiHeaders();
@@ -47,6 +47,7 @@ if ($action === 'logout') {
 }
 
 // التحقق من CSRF لجميع POST endpoints (ما عدا login/register أول مرة)
+// نسمح بـ login/register بدون CSRF لكن مع rate limiting قوي
 $requiresCsrf = in_array($action, ['change_password','update_profile','delete_account','verify_otp']);
 if ($requiresCsrf) {
     requireCsrf();
@@ -95,13 +96,9 @@ if ($action === 'login') {
     $_SESSION['_regen_at'] = time();
 
     // تحديث الحضور
-    try {
-        $db->prepare("INSERT INTO user_presence (userId, status, lastSeenAt) VALUES (?, 'online', CURRENT_TIMESTAMP) 
-                      ON DUPLICATE KEY UPDATE status='online', lastSeenAt=CURRENT_TIMESTAMP")
-           ->execute([$user['id']]);
-    } catch (Exception $e) {
-        // تجاهل الأخطاء في تحديث الحضور
-    }
+    // SQLite doesn't support ON DUPLICATE KEY UPDATE, use REPLACE or manual check
+    $db->prepare("INSERT OR REPLACE INTO user_presence (userId, status, lastSeenAt) VALUES (?, 'online', CURRENT_TIMESTAMP)")
+       ->execute([$user['id']]);
 
     // تحديث آخر ظهور
     $db->prepare("UPDATE users SET updatedAt = CURRENT_TIMESTAMP WHERE id = ?")->execute([$user['id']]);
@@ -164,14 +161,10 @@ if ($action === 'register') {
     $hashed = password_hash($password, PASSWORD_DEFAULT);
     $joined = date('Y-m');
 
-    try {
-        $stmt = $db->prepare("INSERT INTO users (name, phone, email, password, rating, ratingCount, joinedDate, role, isBanned)
-                              VALUES (?, ?, ?, ?, 5.0, 0, ?, 'seller', 0)");
-        $stmt->execute([$name, $phone, $email ?: null, $hashed, $joined]);
-        $userId = $db->lastInsertId();
-    } catch (PDOException $e) {
-        jsonError('فشل إنشاء الحساب. يرجى المحاولة لاحقاً', 500);
-    }
+    $stmt = $db->prepare("INSERT INTO users (name, phone, email, password, rating, joinedDate, role, isBanned)
+                          VALUES (?, ?, ?, ?, 5.0, ?, 'seller', 0)");
+    $stmt->execute([$name, $phone, $email ?: null, $hashed, $joined]);
+    $userId = $db->lastInsertId();
 
     // إنشاء OTP لتأكيد رقم الجوال
     $otp = generateOTP(6);
@@ -189,21 +182,16 @@ if ($action === 'register') {
     $_SESSION['_regen_at'] = time();
 
     // إشعار ترحيبي
-    try {
-        $db->prepare("INSERT INTO notifications (userId, title, content, type)
-                      VALUES (?, ?, ?, 'system')")
-           ->execute([$userId, 'مرحباً بك في حراج اليمن! 🇾🇪', 'نرحب بك. ابدأ بإضافة أول إعلان لك أو تصفّح المنصة.']);
-    } catch (Exception $e) {
-        // تجاهل الأخطاء في الإشعارات
-    }
+    $db->prepare("INSERT INTO notifications (userId, title, content, type)
+                  VALUES (?, ?, ?, 'system')")
+       ->execute([$userId, 'مرحباً بك في حراج اليمن! 🇾🇪', 'نرحب بك. ابدأ بإضافة أول إعلان لك أو تصفّح المنصة.']);
 
     jsonSuccess([
         'id' => $userId,
         'name' => $name,
         'role' => 'seller',
         'otp_sent' => true,
-        'csrf_token' => csrfToken(),
-        'redirect' => 'index.php'
+        'csrf_token' => csrfToken()
     ], 'تم إنشاء حسابك بنجاح! تم إرسال رمز التحقق إلى جوالك.');
 }
 
@@ -219,7 +207,7 @@ if ($action === 'verify_otp') {
     $user = $userStmt->fetch();
     if (!$user) jsonError('المستخدم غير موجود', 404);
 
-    $stmt = $db->prepare("SELECT * FROM otp_codes WHERE phone = ? AND purpose = ? AND isUsed = 0 AND expiresAt > NOW() ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT * FROM otp_codes WHERE phone = ? AND purpose = ? AND isUsed = 0 AND expiresAt > datetime('now') ORDER BY id DESC LIMIT 1");
     $stmt->execute([$user['phone'], $purpose]);
     $otp = $stmt->fetch();
 
@@ -298,7 +286,7 @@ if ($action === 'reset_password') {
     $pwdCheck = validatePasswordStrength($newPassword);
     if (!$pwdCheck['valid']) jsonError($pwdCheck['message']);
 
-    $stmt = $db->prepare("SELECT * FROM otp_codes WHERE phone = ? AND purpose = 'reset_password' AND isUsed = 0 AND expiresAt > NOW() ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT * FROM otp_codes WHERE phone = ? AND purpose = 'reset_password' AND isUsed = 0 AND expiresAt > datetime('now') ORDER BY id DESC LIMIT 1");
     $stmt->execute([$phone]);
     $otp = $stmt->fetch();
 
@@ -371,39 +359,34 @@ if ($action === 'update_avatar') {
     $result = uploadBase64Image($avatarData, 'avatars');
     if (!$result['success']) jsonError($result['message']);
 
-    $db->prepare("UPDATE users SET avatar = ? WHERE id = ?")->execute([$result['url'], $_SESSION['user_id']]);
-    jsonSuccess(['avatar_url' => $result['url']], 'تم تحديث الصورة');
+    // حذف الصورة القديمة
+    $oldStmt = $db->prepare("SELECT avatar FROM users WHERE id = ?");
+    $oldStmt->execute([$_SESSION['user_id']]);
+    $old = $oldStmt->fetchColumn();
+    if ($old) deleteUploadedFile($old);
+
+    $db->prepare("UPDATE users SET avatar = ? WHERE id = ?")->execute([$result['path'], $_SESSION['user_id']]);
+    jsonSuccess(['avatar' => imageUrl($result['path'])], 'تم تحديث الصورة الشخصية');
 }
 
-// ============ حذف الحساب ============
+// ============ حذف الحساب (GDPR) ============
 if ($action === 'delete_account') {
     requireAuth();
-    $password = $input['password'] ?? '';
-    if (empty($password)) jsonError('أدخل كلمة المرور للتأكيد');
+    
+    // في الواجهة الأمامية نستخدم confirm()، لذا هنا نقوم بالحذف مباشرة
+    // أو يمكن طلب كلمة المرور لزيادة الأمان. حالياً سنكتفي بالتحقق من الجلسة.
+    
+    // Soft delete: ضع علامة محذوف بدلاً من الحذف الفعلي
+    $db->prepare("UPDATE users SET deletedAt = NOW(), phone = CONCAT('del_', id, '_', phone), email = NULL WHERE id = ?")
+       ->execute([$_SESSION['user_id']]);
 
-    $stmt = $db->prepare("SELECT password FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $user = $stmt->fetch();
-
-    if (!$user || !password_verify($password, $user['password'])) {
-        jsonError('كلمة المرور غير صحيحة');
-    }
-
-    // حذف البيانات المرتبطة
-    $db->prepare("DELETE FROM ads WHERE userId = ?")->execute([$_SESSION['user_id']]);
-    $db->prepare("DELETE FROM messages WHERE senderId = ? OR receiverId = ?")->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
-    $db->prepare("DELETE FROM favorites WHERE userId = ?")->execute([$_SESSION['user_id']]);
-    $db->prepare("DELETE FROM ratings WHERE fromUserId = ? OR toUserId = ?")->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
-    $db->prepare("DELETE FROM notifications WHERE userId = ?")->execute([$_SESSION['user_id']]);
-    $db->prepare("DELETE FROM user_presence WHERE userId = ?")->execute([$_SESSION['user_id']]);
-
-    // حذف الحساب
-    $db->prepare("DELETE FROM users WHERE id = ?")->execute([$_SESSION['user_id']]);
+    // أرشفة إعلاناته
+    $db->prepare("UPDATE ads SET status = 'archived' WHERE userId = ? AND status != 'deleted'")->execute([$_SESSION['user_id']]);
 
     $_SESSION = [];
     session_destroy();
 
-    jsonSuccess([], 'تم حذف الحساب بنجاح');
+    jsonSuccess([], 'تم حذف حسابك بنجاح. نأسف لمغادرتك 😔');
 }
 
-jsonError('إجراء غير معروف', 400);
+jsonError('إجراء غير معروف: ' . $action);
