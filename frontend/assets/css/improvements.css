@@ -1,0 +1,525 @@
+/* ============================================================================
+   حراج اليمن الفاخر — تحسينات التصميم v4.1
+   تحسينات الاستجابة والتناسق على جميع الأجهزة
+   ============================================================================ */
+
+/* ===== Media Queries Breakpoints ===== */
+/* Mobile: < 640px */
+/* Tablet: 640px - 1024px */
+/* Desktop: > 1024px */
+
+/* ===== تحسينات الـ Header ===== */
+@media (max-width: 768px) {
+    header {
+        padding: var(--sp-3) var(--sp-4) !important;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: var(--sp-3);
+    }
+    
+    .logo-section {
+        width: 100%;
+    }
+    
+    .search-bar {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* ===== تحسينات الـ Hero Section ===== */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: var(--sp-6) var(--sp-4) !important;
+        min-height: 300px;
+    }
+    
+    .hero-content h1 {
+        font-size: 24px !important;
+    }
+    
+    .hero-content p {
+        font-size: 14px !important;
+    }
+    
+    .hero-cta-group {
+        flex-direction: column;
+        gap: var(--sp-3);
+    }
+    
+    .hero-cta-group .btn {
+        width: 100%;
+    }
+}
+
+/* ===== تحسينات شبكة الفئات ===== */
+@media (max-width: 768px) {
+    .categories-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: var(--sp-3) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .categories-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ===== تحسينات شريط الفلترة ===== */
+@media (max-width: 1024px) {
+    .page-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .sidebar-filters {
+        display: none;
+    }
+    
+    .sidebar-filters.mobile-open {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.5);
+        padding: var(--sp-4);
+        overflow-y: auto;
+    }
+    
+    .sidebar-filters.mobile-open .surface-card {
+        background: var(--surface);
+        border-radius: var(--r-lg);
+        padding: var(--sp-4);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* ===== تحسينات شبكة الإعلانات ===== */
+@media (max-width: 1024px) {
+    .ads-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .ads-grid {
+        grid-template-columns: 1fr !important;
+        gap: var(--sp-3) !important;
+    }
+}
+
+/* ===== تحسينات بطاقة الإعلان ===== */
+@media (max-width: 768px) {
+    .ad-card {
+        border-radius: var(--r-md) !important;
+    }
+    
+    .ad-card-image {
+        aspect-ratio: 3/2 !important;
+    }
+    
+    .ad-body {
+        padding: var(--sp-3) !important;
+    }
+    
+    .ad-title {
+        font-size: 14px !important;
+    }
+    
+    .ad-price {
+        font-size: 16px !important;
+    }
+}
+
+/* ===== تحسينات الجداول ===== */
+@media (max-width: 768px) {
+    .data-table {
+        font-size: 12px !important;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: var(--sp-2) !important;
+    }
+    
+    .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ===== تحسينات الـ Forms ===== */
+@media (max-width: 768px) {
+    .form-group {
+        margin-bottom: var(--sp-4) !important;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .input,
+    .select,
+    .textarea {
+        font-size: 16px !important; /* منع التكبير التلقائي على iOS */
+        padding: var(--sp-3) var(--sp-4) !important;
+    }
+}
+
+/* ===== تحسينات الأزرار ===== */
+@media (max-width: 768px) {
+    .btn {
+        padding: var(--sp-3) var(--sp-4) !important;
+        font-size: 14px !important;
+        min-height: 44px; /* معيار الوصول */
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        gap: var(--sp-2);
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+}
+
+/* ===== تحسينات الـ Modal والـ Dialog ===== */
+@media (max-width: 768px) {
+    .modal,
+    .dialog {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 90vh !important;
+    }
+    
+    .modal-header,
+    .dialog-header {
+        padding: var(--sp-4) !important;
+    }
+    
+    .modal-body,
+    .dialog-body {
+        padding: var(--sp-4) !important;
+    }
+}
+
+/* ===== تحسينات الـ Sidebar ===== */
+@media (max-width: 1024px) {
+    .sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        background: var(--surface);
+        z-index: 999;
+        transition: left 0.3s ease;
+        box-shadow: var(--sh-lg);
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+    }
+    
+    .sidebar.open ~ .sidebar-overlay {
+        display: block;
+    }
+}
+
+/* ===== تحسينات الـ Footer ===== */
+@media (max-width: 768px) {
+    footer {
+        padding: var(--sp-6) var(--sp-4) !important;
+    }
+    
+    .footer-grid {
+        grid-template-columns: 1fr !important;
+        gap: var(--sp-4) !important;
+    }
+    
+    .footer-section h4 {
+        font-size: 14px !important;
+    }
+}
+
+/* ===== تحسينات الـ Cards ===== */
+.card {
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-sm);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: var(--sh-md);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .card {
+        border-radius: var(--r-md);
+    }
+}
+
+/* ===== تحسينات الـ Badges ===== */
+@media (max-width: 768px) {
+    .badge {
+        font-size: 11px !important;
+        padding: var(--sp-1) var(--sp-2) !important;
+    }
+}
+
+/* ===== تحسينات الـ Pagination ===== */
+@media (max-width: 768px) {
+    .pagination {
+        gap: var(--sp-1) !important;
+    }
+    
+    .pagination .btn {
+        padding: var(--sp-2) var(--sp-3) !important;
+        font-size: 12px !important;
+    }
+}
+
+/* ===== تحسينات الـ Breadcrumb ===== */
+@media (max-width: 768px) {
+    .breadcrumb {
+        font-size: 12px !important;
+        gap: var(--sp-2) !important;
+    }
+}
+
+/* ===== تحسينات الـ Alerts ===== */
+@media (max-width: 768px) {
+    .alert {
+        padding: var(--sp-3) var(--sp-4) !important;
+        font-size: 13px !important;
+    }
+}
+
+/* ===== تحسينات الـ Toasts ===== */
+@media (max-width: 768px) {
+    #toastContainer {
+        bottom: var(--sp-4) !important;
+        right: var(--sp-4) !important;
+        left: var(--sp-4) !important;
+    }
+    
+    .toast {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* ===== تحسينات الـ Dropdowns ===== */
+@media (max-width: 768px) {
+    .dropdown-menu {
+        position: fixed;
+        top: auto;
+        right: var(--sp-4) !important;
+        left: var(--sp-4) !important;
+        width: auto;
+        max-width: calc(100vw - var(--sp-8));
+    }
+}
+
+/* ===== تحسينات الـ Tabs ===== */
+@media (max-width: 768px) {
+    .tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .tabs-nav {
+        gap: var(--sp-2) !important;
+    }
+    
+    .tabs-nav button {
+        padding: var(--sp-2) var(--sp-3) !important;
+        font-size: 12px !important;
+        white-space: nowrap;
+    }
+}
+
+/* ===== تحسينات الـ Accordions ===== */
+@media (max-width: 768px) {
+    .accordion-item {
+        border-radius: var(--r-md) !important;
+    }
+    
+    .accordion-header {
+        padding: var(--sp-3) var(--sp-4) !important;
+        font-size: 14px !important;
+    }
+    
+    .accordion-body {
+        padding: var(--sp-3) var(--sp-4) !important;
+        font-size: 13px !important;
+    }
+}
+
+/* ===== تحسينات الـ Spinners والـ Loaders ===== */
+@media (max-width: 768px) {
+    .spinner {
+        width: 24px !important;
+        height: 24px !important;
+    }
+    
+    .loader {
+        font-size: 12px !important;
+    }
+}
+
+/* ===== تحسينات الـ Skeletons ===== */
+.skeleton {
+    background: linear-gradient(90deg, var(--bg-soft) 25%, var(--bg) 50%, var(--bg-soft) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ===== تحسينات الـ Empty States ===== */
+.empty-state {
+    text-align: center;
+    padding: var(--sp-8) var(--sp-4);
+    color: var(--muted);
+}
+
+.empty-state svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--sp-4);
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 14px;
+    margin-bottom: var(--sp-4);
+}
+
+/* ===== تحسينات الـ Loading States ===== */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+/* ===== تحسينات الـ Focus States ===== */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+}
+
+/* ===== تحسينات الـ Disabled States ===== */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== تحسينات الـ Print ===== */
+@media print {
+    header,
+    footer,
+    .sidebar,
+    .btn-print-hide {
+        display: none !important;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+    
+    a {
+        color: black;
+        text-decoration: underline;
+    }
+}
+
+/* ===== تحسينات الـ Accessibility ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== تحسينات الـ Dark Mode ===== */
+[data-theme="dark"] {
+    --bg: #0a0e1a;
+    --bg-soft: #111726;
+    --surface: #161d2e;
+    --text: #f1f5f9;
+    --text-soft: #cbd5e1;
+    --muted: #94a3b8;
+    --line: #1e293b;
+}
+
+/* ===== تحسينات الـ High Contrast Mode ===== */
+@media (prefers-contrast: more) {
+    body {
+        font-weight: 500;
+    }
+    
+    .btn,
+    .card {
+        border: 2px solid currentColor;
+    }
+}
+
+/* ===== تحسينات الـ Large Text Mode ===== */
+@media (prefers-color-scheme: light) and (min-width: 1920px) {
+    body {
+        font-size: 16px;
+    }
+    
+    h1 { font-size: 36px; }
+    h2 { font-size: 28px; }
+    h3 { font-size: 22px; }
+}
